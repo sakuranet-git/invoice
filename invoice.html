@@ -1614,10 +1614,8 @@
     function openMailModal() {
         const data = collectFormData();
         const clientName = data.clientName || 'お客様';
-        const month = new Date(data.invDate || Date.now()).getMonth() + 1;
-
         document.getElementById('mailTo').value      = data.clientEmail || '';
-        document.getElementById('mailSubject').value = `【さくらねっと】${month}月分 請求書のご案内（${data.invoiceNumber}）`;
+        document.getElementById('mailSubject').value = `【さくらねっと】${getBillingMonthLabel()} 請求書のご案内（${data.invoiceNumber}）`;
         document.getElementById('mailBody').value    =
 `${clientName} 御中
 
