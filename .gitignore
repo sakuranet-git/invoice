@@ -1,0 +1,16 @@
+# SAKURA 請求書システム — .gitignore
+
+# APIキー・機密設定ファイル（絶対にGitHubに上げない）
+config.js
+
+# バックアップファイル
+*.bak
+*.bak_*
+
+# エディタ設定
+.vscode/
+.idea/
+
+# OS生成ファイル
+.DS_Store
+Thumbs.db
