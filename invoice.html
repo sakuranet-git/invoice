@@ -1182,6 +1182,7 @@
     function backToCustomers() {
         currentCustomerFilter = null;
         currentCustomerData   = null;
+        updateContextBar('new');
 
         document.getElementById('invoiceView').style.display  = 'none';
         document.getElementById('customerView').style.display = 'flex';
@@ -1367,6 +1368,7 @@
             document.getElementById('clientEmail').value   = c.email   || '';
             document.getElementById('clientAddress').value = (c.zip ? '〒' + c.zip + ' ' : '') + (c.address || '');
         }
+        updateContextBar('new');
 
         const filtered = currentCustomerFilter
             ? invoiceCache.filter(inv => inv.clientName === currentCustomerFilter)
@@ -1433,6 +1435,7 @@
 
             renderItems(data.items || []);
             updateTotals();
+            updateContextBar('edit', data.invoiceNumber);
             renderInvoiceList(invoiceCache); // アクティブ状態更新
 
         } catch (e) {
