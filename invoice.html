@@ -1742,6 +1742,44 @@ E-mail: system@sakuranet-co.jp
         toast.classList.add('show');
         setTimeout(() => toast.classList.remove('show'), 3000);
     }
+
+    // ─────────────────────────────────────────
+    // 印鑑ドラッグ機能
+    // ─────────────────────────────────────────
+    function startStampDrag(e, stampId) {
+        e.preventDefault();
+        const el = document.getElementById(stampId);
+        const canvas = document.getElementById('a4Canvas');
+        const startX = e.clientX - el.offsetLeft;
+        const startY = e.clientY - el.offsetTop;
+
+        el.style.cursor = 'grabbing';
+
+        function onMove(ev) {
+            let x = ev.clientX - startX;
+            let y = ev.clientY - startY;
+            // a4Canvas内に制限
+            x = Math.max(0, Math.min(x, 794 - el.offsetWidth));
+            y = Math.max(0, Math.min(y, canvas.offsetHeight - el.offsetHeight));
+            el.style.left = x + 'px';
+            el.style.top  = y + 'px';
+        }
+
+        function onUp() {
+            el.style.cursor = 'grab';
+            document.removeEventListener('mousemove', onMove);
+            document.removeEventListener('mouseup', onUp);
+            // 位置をlocalStorageに保存
+            const storageKey = stampId === 'stampCo' ? 'stampCoPos' : 'stampPerPos';
+            localStorage.setItem(storageKey, JSON.stringify({
+                x: parseInt(el.style.left),
+                y: parseInt(el.style.top)
+            }));
+        }
+
+        document.addEventListener('mousemove', onMove);
+        document.addEventListener('mouseup', onUp);
+    }
 </script>
 
 </body>
