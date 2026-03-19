@@ -1181,7 +1181,7 @@
         if (currentCustomerFilter) {
             const byMonth = {};
             list.forEach(inv => {
-                const ym = (inv.invDate || '').substring(0, 7) || 'nodate';
+                const ym = inv.billingMonth || (inv.invDate || '').substring(0, 7) || 'nodate';
                 if (!byMonth[ym]) byMonth[ym] = [];
                 byMonth[ym].push(inv);
             });
@@ -1200,7 +1200,7 @@
                     <div class="inv-card ${isActive}" onclick="loadInvoice('${inv.id}')">
                         <div class="inv-card-num">${escHtml(inv.invoiceNumber || '-')}</div>
                         <div class="inv-card-meta">
-                            <span>${escHtml(inv.invDate || '')}</span>
+                            <span>${inv.billingMonth ? inv.billingMonth.replace(/^(\d{4})-(\d{2})$/, '$1年$2月分') : escHtml(inv.invDate || '')}</span>
                             <span class="status-badge ${s.cls}">${s.label}</span>
                             <button class="inv-card-del" onclick="deleteInvoice('${inv.id}',event)">削除</button>
                         </div>
@@ -1222,7 +1222,7 @@
                 <div class="inv-card-num">${escHtml(inv.invoiceNumber || '-')}</div>
                 <div class="inv-card-name">${escHtml(inv.clientName || '（名前なし）')}</div>
                 <div class="inv-card-meta">
-                    <span>${escHtml(inv.invDate || '')}</span>
+                    <span>${inv.billingMonth ? inv.billingMonth.replace(/^(\d{4})-(\d{2})$/, '$1年$2月分') : escHtml(inv.invDate || '')}</span>
                     <span class="status-badge ${s.cls}">${s.label}</span>
                     <button class="inv-card-del" onclick="deleteInvoice('${inv.id}',event)">削除</button>
                 </div>
