@@ -1634,33 +1634,7 @@
     // メール送信モーダル
     // ─────────────────────────────────────────
     function openMailModal() {
-        const data = collectFormData();
-        const clientName = data.clientName || 'お客様';
-        document.getElementById('mailTo').value      = data.clientEmail || '';
-        document.getElementById('mailSubject').value = `【さくらねっと】${getBillingMonthLabel()} 請求書のご案内（${data.invoiceNumber}）`;
-        document.getElementById('mailBody').value    =
-`${clientName} 御中
-
-いつも大変お世話になっております。
-株式会社さくらねっとでございます。
-
-下記の通り、請求書をご案内申し上げます。
-
-【請求書番号】${data.invoiceNumber}
-【発行日】${data.invDate}
-【請求対象月】${getBillingMonthLabel()}
-【ご請求金額（税込）】${formatCurrency(data.total)}
-
-ご不明な点がございましたら、お気軽にお問い合わせください。
-今後ともよろしくお願い申し上げます。
-
----
-株式会社さくらねっと
-E-mail: system@sakuranet-co.jp
-`;
-
-        document.getElementById('mailStatus').textContent = '';
-        document.getElementById('mailModal').classList.add('show');
+        openPreviewModal();  // まずプレビューを開く
     }
 
     function closeMailModal() {
@@ -1804,6 +1778,81 @@ E-mail: system@sakuranet-co.jp
         const pdf = await html2pdf().set(opt).from(element).outputPdf('datauristring');
         // "data:application/pdf;base64,XXXX..." → "XXXX..." 部分だけ
         return { base64: pdf.split(',')[1], filename };
+    }
+
+    // ─────────────────────────────────────────
+    // メール送信フロー（プレビューから）
+    // ─────────────────────────────────────────
+    function openMailFromPreview() {
+        const data = collectFormData();
+        const bm = getBillingMonthLabel();  // "2026年3月分"
+        const clientName = data.clientName || 'お客様';
+
+        document.getElementById('mailTo2').value      = data.clientEmail || '';
+        document.getElementById('mailSubject2').value = `【さくらねっと】${bm} 請求書のご案内（${data.invoiceNumber}）`;
+        document.getElementById('mailBody2').value    =
+`${clientName} 御中
+
+いつも大変お世話になっております。
+株式会社さくらねっとでございます。
+
+${bm}分の請求書をPDFにてお送りいたします。
+ご確認のほどよろしくお願いいたします。
+
+【請求書番号】${data.invoiceNumber}
+【発行日】${data.invDate}
+【請求対象】${bm}
+【ご請求金額（税込）】¥${formatNum(data.total)}
+
+ご不明な点がございましたら、お気軽にお問い合わせください。
+
+─────────────────────────────
+株式会社さくらねっと
+TEL: 06-7777-2720 / FAX: 06-6303-3767
+E-mail: system@sakuranet-co.jp
+─────────────────────────────`;
+
+        document.getElementById('mailStatus2').textContent = '';
+        document.getElementById('mailConfirmModal').style.display = 'flex';
+    }
+
+    function closeMailConfirmModal() {
+        document.getElementById('mailConfirmModal').style.display = 'none';
+    }
+
+    async function sendMailWithPdf() {
+        const to      = document.getElementById('mailTo2').value.trim();
+        const subject = document.getElementById('mailSubject2').value.trim();
+        const body    = document.getElementById('mailBody2').value.trim();
+        const status  = document.getElementById('mailStatus2');
+
+        if (!to)      { status.textContent = '⚠ 宛先メールアドレスを入力してください'; return; }
+        if (!subject) { status.textContent = '⚠ 件名を入力してください'; return; }
+
+        status.textContent = '📄 PDF生成中...';
+
+        try {
+            const { base64, filename } = await generatePdfBase64();
+
+            status.textContent = '📤 送信中...';
+
+            const res = await fetch('invoice_send.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ to, subject, body, pdf_base64: base64, pdf_filename: filename }),
+            });
+            const json = await res.json();
+
+            if (json.success) {
+                showToast('✅ メールを送信しました（PDF添付）');
+                closeMailConfirmModal();
+                closePreviewModal();
+            } else {
+                status.textContent = '❌ ' + (json.error || '送信失敗');
+            }
+        } catch (e) {
+            status.textContent = '❌ エラー: ' + e.message;
+        }
     }
 </script>
 
