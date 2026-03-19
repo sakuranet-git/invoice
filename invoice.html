@@ -177,6 +177,34 @@
             overflow: hidden;
         }
 
+        /* ===== コンテキストバー ===== */
+        .context-bar {
+            display: none;
+            align-items: center;
+            justify-content: space-between;
+            padding: 8px 20px;
+            background: linear-gradient(135deg, rgba(233,30,99,0.12), rgba(124,58,237,0.12));
+            border-left: 3px solid #e91e63;
+            border-bottom: 1px solid var(--glass-border);
+            font-size: 13px;
+        }
+        .context-bar.visible { display: flex; }
+        .context-bar-name {
+            font-weight: 700;
+            color: #fff;
+        }
+        .context-bar-badge {
+            font-size: 11px;
+            font-weight: 700;
+            padding: 3px 10px;
+            border-radius: 20px;
+            background: rgba(255,255,255,0.12);
+            color: #fff;
+        }
+        .context-bar-badge.editing {
+            background: rgba(233,30,99,0.35);
+        }
+
         /* ツールバー */
         .toolbar {
             padding: 12px 20px;
