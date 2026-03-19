@@ -422,7 +422,6 @@
 
         /* ===== PDF印刷専用スタイル ===== */
         @media print {
-            /* 印刷時は請求書プレビューのみ表示 */
             body > *:not(#printArea) { display: none !important; }
             #printArea {
                 display: block !important;
@@ -437,36 +436,137 @@
             display: none;
             font-family: 'Noto Sans JP', sans-serif;
             color: #111;
-            padding: 40px 50px;
             background: #fff;
+            padding: 18px 28px;
+            font-size: 12px;
+            line-height: 1.5;
         }
 
-        .print-header   { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 30px; }
-        .print-title    { font-size: 28px; font-weight: 900; color: #1a1a2e; letter-spacing: 4px; }
-        .print-inv-num  { font-size: 12px; color: #555; margin-top: 4px; }
-        .print-company  { font-size: 13px; text-align: right; color: #333; line-height: 1.8; }
-        .print-company .company-name { font-size: 16px; font-weight: 700; }
-        .print-to       { margin-bottom: 24px; }
-        .print-to .to-name { font-size: 22px; font-weight: 700; border-bottom: 2px solid #1a1a2e; padding-bottom: 6px; display: inline-block; margin-bottom: 8px; }
-        .print-meta { display: flex; gap: 30px; margin-bottom: 24px; font-size: 13px; color: #444; }
-        .print-meta-item .meta-label { font-size: 11px; color: #888; }
-        .print-meta-item .meta-val   { font-weight: 700; font-size: 15px; color: #111; }
+        /* ---- ページ最上部：タイトル行 ---- */
+        .pi-head-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 6px;
+        }
+        .pi-head-left { display: flex; align-items: center; gap: 10px; }
+        .pi-logo-box {
+            width: 44px; height: 44px;
+            background: #111;
+            border-radius: 4px;
+            display: flex; align-items: center; justify-content: center;
+            color: #fff; font-weight: 900; font-size: 13px; letter-spacing: -1px;
+        }
+        .pi-title-box {
+            font-size: 20px; font-weight: 900; letter-spacing: 8px;
+            color: #2e7d32;
+            border: 2.5px solid #2e7d32;
+            padding: 5px 22px;
+        }
+        .pi-head-right { text-align: right; font-size: 11px; color: #333; line-height: 2; }
+        .pi-head-right .pi-page { color: #888; }
 
-        .print-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 13px; }
-        .print-table th { background: #1a1a2e; color: #fff; padding: 8px 12px; text-align: left; font-size: 12px; }
-        .print-table td { padding: 8px 12px; border-bottom: 1px solid #e8eaf0; }
-        .print-table tr:nth-child(even) td { background: #f8f9ff; }
-        .print-table .num-cell { text-align: right; }
+        /* ---- 顧客 / 自社セクション ---- */
+        .pi-info-section {
+            display: flex;
+            gap: 16px;
+            margin-bottom: 10px;
+            border-bottom: 1px solid #ccc;
+            padding-bottom: 10px;
+        }
+        .pi-customer { flex: 1; font-size: 12px; line-height: 2; }
+        .pi-cust-name {
+            font-size: 19px; font-weight: 900;
+            border-bottom: 1px solid #111;
+            display: inline-block;
+            padding-bottom: 2px;
+            margin-bottom: 4px;
+        }
+        .pi-cust-label { font-size: 11px; color: #555; }
+        .pi-reg-num { font-size: 11px; color: #333; margin-top: 6px; }
 
-        .print-totals { display: flex; justify-content: flex-end; margin-bottom: 28px; }
-        .print-totals table { border-collapse: collapse; min-width: 260px; font-size: 14px; }
-        .print-totals td { padding: 6px 14px; }
-        .print-totals td:last-child { text-align: right; font-weight: 700; }
-        .print-totals .grand-total td { font-size: 18px; color: #c8205c; border-top: 2px solid #1a1a2e; padding-top: 10px; }
+        .pi-our-side {
+            width: 300px;
+            display: flex;
+            gap: 8px;
+            align-items: flex-start;
+        }
+        .pi-our-info { flex: 1; font-size: 11px; line-height: 1.9; color: #333; }
+        .pi-our-name { font-size: 15px; font-weight: 900; color: #111; }
+        .pi-stamps { display: flex; flex-direction: column; gap: 6px; align-items: center; }
+        .pi-stamp-co {
+            width: 58px; height: 58px;
+            border: 2px solid #c62828;
+            display: flex; align-items: center; justify-content: center;
+            text-align: center;
+            font-size: 9px; font-weight: 900;
+            color: #c62828; line-height: 1.5;
+            writing-mode: vertical-rl;
+            letter-spacing: 1px;
+        }
+        .pi-stamp-person {
+            width: 44px; height: 44px;
+            border: 2px solid #c62828;
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 13px; font-weight: 900;
+            color: #c62828;
+        }
 
-        .print-note { margin-top: 10px; padding: 16px; background: #f8f9ff; border-radius: 6px; font-size: 13px; color: #555; line-height: 1.8; }
-        .print-bank { margin-top: 20px; padding: 16px; border: 1px solid #ddd; border-radius: 6px; font-size: 13px; }
-        .print-bank .bank-title { font-weight: 700; margin-bottom: 8px; color: #1a1a2e; }
+        /* ---- 品目テーブル ---- */
+        .pi-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 11px;
+            border: 1.5px solid #2e7d32;
+        }
+        .pi-table th {
+            background: #fff;
+            color: #2e7d32;
+            border: 1px solid #2e7d32;
+            padding: 5px 6px;
+            text-align: center;
+            font-weight: 700;
+            font-size: 11px;
+            white-space: nowrap;
+        }
+        .pi-table td {
+            border: 1px solid #2e7d32;
+            padding: 4px 6px;
+            vertical-align: middle;
+            min-height: 22px;
+        }
+        .pi-td-r { text-align: right; }
+        .pi-td-c { text-align: center; }
+
+        /* ---- フッター合計行 ---- */
+        .pi-footer-row {
+            display: flex;
+            border: 1.5px solid #2e7d32;
+            border-top: none;
+        }
+        .pi-fc {
+            flex: 1;
+            padding: 5px 10px;
+            border-right: 1px solid #2e7d32;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 12px;
+        }
+        .pi-fc:last-child { border-right: none; font-weight: 700; font-size: 13px; }
+        .pi-fc-lbl { color: #555; }
+        .pi-fc-val { font-weight: 700; }
+
+        /* ---- 備考 ---- */
+        .pi-note {
+            margin-top: 12px;
+            padding: 8px 12px;
+            border: 1px solid #ccc;
+            font-size: 11px;
+            color: #444;
+            line-height: 1.8;
+        }
 
         /* ===== レスポンシブ ===== */
         @media (max-width: 768px) {
@@ -690,15 +790,11 @@
 
             <!-- === セクション4：備考 === -->
             <div class="section-card">
-                <div class="section-title">📝 備考・振込先</div>
+                <div class="section-title">📝 備考</div>
                 <div class="form-grid">
                     <div class="form-group full">
                         <label>備考</label>
                         <textarea id="invNote" placeholder="お支払いは月末締め翌月末払いでお願いいたします。"></textarea>
-                    </div>
-                    <div class="form-group full">
-                        <label>振込先情報</label>
-                        <textarea id="invBank" placeholder="○○銀行 ○○支店 普通 1234567 カ）サクラネット">さくら銀行 本店 普通 1234567 カ）サクラネット</textarea>
                     </div>
                 </div>
             </div>
@@ -1104,7 +1200,6 @@
         document.getElementById('clientEmail').value   = src.clientEmail   || '';
         document.getElementById('clientAddress').value = src.clientAddress || '';
         document.getElementById('invNote').value       = src.note          || '';
-        document.getElementById('invBank').value       = src.bankInfo      || '';
 
         // 品目の復元
         renderItems(src.items || []);
@@ -1134,7 +1229,6 @@
             document.getElementById('clientEmail').value      = data.clientEmail    || '';
             document.getElementById('clientAddress').value    = data.clientAddress  || '';
             document.getElementById('invNote').value          = data.note           || '';
-            document.getElementById('invBank').value          = data.bankInfo       || '';
 
             renderItems(data.items || []);
             updateTotals();
@@ -1189,7 +1283,6 @@
             clientEmail:    document.getElementById('clientEmail').value.trim(),
             clientAddress:  document.getElementById('clientAddress').value.trim(),
             note:           document.getElementById('invNote').value.trim(),
-            bankInfo:       document.getElementById('invBank').value.trim(),
             items,
             subtotal,
             tax,
@@ -1354,62 +1447,109 @@
         const data = collectFormData();
         const printArea = document.getElementById('printArea');
 
-        // 請求書HTMLを動的生成
-        const itemRows = data.items.filter(it => it.name).map(it => `
+        // 品目行（名前があるものだけ。空行は最低20行になるよう補填）
+        const validItems = data.items.filter(it => it.name);
+        const itemRows = validItems.map(it => `
             <tr>
                 <td>${escHtml(it.name)}</td>
-                <td class="num-cell">${it.qty}</td>
-                <td>${escHtml(it.unit)}</td>
-                <td class="num-cell">¥${formatNum(it.price)}</td>
-                <td class="num-cell">¥${formatNum(it.qty * it.price)}</td>
+                <td class="pi-td-c">${it.qty}</td>
+                <td class="pi-td-c">${escHtml(it.unit)}</td>
+                <td class="pi-td-r">¥${formatNum(it.price)}</td>
+                <td class="pi-td-r">¥${formatNum(it.qty * it.price)}</td>
+                <td></td>
             </tr>`).join('');
 
+        // 空行補填（最低20行）
+        const emptyCount = Math.max(0, 20 - validItems.length);
+        const emptyRows = Array(emptyCount).fill(
+            '<tr><td style="height:22px;"></td><td></td><td></td><td></td><td></td><td></td></tr>'
+        ).join('');
+
+        // 住所から郵便番号を分離
+        const addrRaw  = data.clientAddress || '';
+        const zipMatch = addrRaw.match(/〒?([\d]{3}-[\d]{4})\s*/);
+        const custZip  = zipMatch ? zipMatch[0] : '';
+        const custAddr = addrRaw.replace(custZip, '').trim();
+
+        // 請求書番号を右ゼロ埋め8桁で整形（例 INV-202603-001 → 00000001）
+        const numPart  = (data.invoiceNumber || '').replace(/\D/g, '').slice(-8).padStart(8, '0');
+
         printArea.innerHTML = `
-            <div class="print-header">
-                <div>
-                    <div class="print-title">請 求 書</div>
-                    <div class="print-inv-num">No. ${escHtml(data.invoiceNumber)}</div>
+        <!-- ① タイトル行 -->
+        <div class="pi-head-row">
+            <div class="pi-head-left">
+                <div class="pi-logo-box">🌸</div>
+                <div class="pi-title-box">請 求 書</div>
+            </div>
+            <div class="pi-head-right">
+                <div class="pi-page">PAGE　1 / 1</div>
+                <div>売上日&emsp;${escHtml(data.invDate)}</div>
+                <div>No.&emsp;&emsp;${numPart}</div>
+            </div>
+        </div>
+
+        <!-- ② 顧客情報（左） / 自社情報（右） -->
+        <div class="pi-info-section">
+            <div class="pi-customer">
+                ${custZip ? `<div>${escHtml(custZip)}</div>` : ''}
+                ${custAddr ? `<div>${escHtml(custAddr)}</div>` : ''}
+                <div class="pi-cust-name">${escHtml(data.clientName || '御中')}</div>
+                <div>様</div>
+                ${data.clientContact ? `<div>TEL&ensp;${escHtml(data.clientContact)}</div>` : ''}
+                <div class="pi-reg-num">登録番号：T9120001205370</div>
+            </div>
+
+            <div class="pi-our-side">
+                <div class="pi-our-info">
+                    <div>〒532-0012</div>
+                    <div>大阪市淀川区木川東4-3-34-514</div>
+                    <div class="pi-our-name">株式会社さくらねっと</div>
+                    <div>TEL 06-7777-2720&emsp;FAX 06-6303-3767</div>
+                    <div>担当者：伏見</div>
+                    <div style="margin-top:4px; font-size:10px;">支払期限：${escHtml(data.invDueDate || '')}</div>
                 </div>
-                <div class="print-company">
-                    <div class="company-name">株式会社さくらねっと</div>
-                    <div>〒000-0000 ○○県○○市…</div>
-                    <div>TEL: 0XX-XXXX-XXXX</div>
-                    <div>E-mail: system@sakuranet-co.jp</div>
+                <div class="pi-stamps">
+                    <div class="pi-stamp-co">さくら<br>ねっと<br>㈱</div>
+                    <div class="pi-stamp-person">伏見</div>
                 </div>
             </div>
-            <div class="print-to">
-                <div class="to-name">${escHtml(data.clientName || '御中')} 御中</div>
-                <div style="font-size:13px; color:#555;">担当者: ${escHtml(data.clientContact || '')}</div>
+        </div>
+
+        <!-- ③ 品目テーブル -->
+        <table class="pi-table">
+            <thead>
+                <tr>
+                    <th style="width:42%;">商　品　コ　ー　ド　／　商　品　名</th>
+                    <th style="width:8%;">数　量</th>
+                    <th style="width:8%;">単位</th>
+                    <th style="width:14%;">単　　価</th>
+                    <th style="width:14%;">金　　額</th>
+                    <th style="width:14%;">備　　考</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${itemRows}
+                ${emptyRows}
+            </tbody>
+        </table>
+
+        <!-- ④ 合計フッター -->
+        <div class="pi-footer-row">
+            <div class="pi-fc">
+                <span class="pi-fc-lbl">税抜額</span>
+                <span class="pi-fc-val">¥${formatNum(data.subtotal)}</span>
             </div>
-            <div class="print-meta">
-                <div class="print-meta-item">
-                    <div class="meta-label">発行日</div>
-                    <div class="meta-val">${escHtml(data.invDate)}</div>
-                </div>
-                <div class="print-meta-item">
-                    <div class="meta-label">支払期限</div>
-                    <div class="meta-val">${escHtml(data.invDueDate)}</div>
-                </div>
-                <div class="print-meta-item">
-                    <div class="meta-label">請求金額（税込）</div>
-                    <div class="meta-val" style="font-size:22px; color:#c8205c;">${formatCurrency(data.total)}</div>
-                </div>
+            <div class="pi-fc">
+                <span class="pi-fc-lbl">消費税額</span>
+                <span class="pi-fc-val">¥${formatNum(data.tax)}</span>
             </div>
-            <table class="print-table">
-                <thead>
-                    <tr><th>品名・内容</th><th>数量</th><th>単位</th><th>単価</th><th>小計</th></tr>
-                </thead>
-                <tbody>${itemRows}</tbody>
-            </table>
-            <div class="print-totals">
-                <table>
-                    <tr><td>小計</td><td>${formatCurrency(data.subtotal)}</td></tr>
-                    <tr><td>消費税（10%）</td><td>${formatCurrency(data.tax)}</td></tr>
-                    <tr class="grand-total"><td>合計金額</td><td>${formatCurrency(data.total)}</td></tr>
-                </table>
+            <div class="pi-fc" style="flex:2;">
+                <span class="pi-fc-lbl">合　計</span>
+                <span class="pi-fc-val" style="font-size:15px; color:#c62828;">¥${formatNum(data.total)}</span>
             </div>
-            ${data.bankInfo ? `<div class="print-bank"><div class="bank-title">💳 お振込先</div>${escHtml(data.bankInfo)}</div>` : ''}
-            ${data.note ? `<div class="print-note"><strong>備考</strong><br>${escHtml(data.note).replace(/\n/g,'<br>')}</div>` : ''}
+        </div>
+
+        ${data.note ? `<div class="pi-note"><strong>備考：</strong>${escHtml(data.note).replace(/\n/g,'<br>')}</div>` : ''}
         `;
 
         window.print();
@@ -1437,9 +1577,6 @@
 【発行日】${data.invDate}
 【お支払期限】${data.invDueDate}
 【ご請求金額（税込）】${formatCurrency(data.total)}
-
-お振込先：
-${data.bankInfo || ''}
 
 ご不明な点がございましたら、お気軽にお問い合わせください。
 今後ともよろしくお願い申し上げます。
@@ -1498,7 +1635,6 @@ E-mail: system@sakuranet-co.jp
         ['invNumber','invDate','invDueDate','clientName','clientContact','clientEmail','clientAddress','invNote'].forEach(id => {
             document.getElementById(id).value = '';
         });
-        document.getElementById('invBank').value   = 'さくら銀行 本店 普通 1234567 カ）サクラネット';
         document.getElementById('invStatus').value = 'draft';
         document.getElementById('itemsBody').innerHTML = '';
     }
