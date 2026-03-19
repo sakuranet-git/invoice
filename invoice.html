@@ -1128,6 +1128,32 @@
     }
 
     // ─────────────────────────────────────────
+    // コンテキストバー更新
+    // ─────────────────────────────────────────
+    function updateContextBar(mode, invoiceNumber) {
+        const bar   = document.getElementById('contextBar');
+        const name  = document.getElementById('contextBarName');
+        const badge = document.getElementById('contextBarBadge');
+
+        if (!currentCustomerFilter) {
+            bar.classList.remove('visible');
+            return;
+        }
+
+        name.textContent = '👤 ' + currentCustomerFilter;
+
+        if (mode === 'new') {
+            badge.textContent = '＋ 新規作成中';
+            badge.classList.remove('editing');
+        } else {
+            badge.textContent = '✏ 編集中：No.' + (invoiceNumber || '');
+            badge.classList.add('editing');
+        }
+
+        bar.classList.add('visible');
+    }
+
+    // ─────────────────────────────────────────
     // 顧客カードクリック → 請求書ビューへ切り替え
     // ─────────────────────────────────────────
     function openCustomerInvoices(name) {
