@@ -563,8 +563,8 @@
                         </div>
                     </div>
                     <div class="form-group">
-                        <label>担当者名</label>
-                        <input type="text" id="clientContact" placeholder="山田 太郎 様">
+                        <label>電話番号</label>
+                        <input type="text" id="clientContact" placeholder="000-0000-0000">
                     </div>
                     <div class="form-group">
                         <label>メールアドレス</label>
@@ -692,6 +692,9 @@
     /** 請求書一覧（メモリキャッシュ） */
     let invoiceCache = [];
 
+    /** 顧客管理キャッシュ（customer_records） */
+    let customerCache = [];
+
     /** Firestoreリアルタイム購読の解除関数 */
     let unsubscribeInvoices = null;
 
@@ -706,6 +709,7 @@
             db = firebase.firestore();
             setSyncBadge(true);
             subscribeInvoices();
+            loadCustomerCache();
         } catch (e) {
             console.error('Firebase初期化エラー:', e);
             setSyncBadge(false);
@@ -734,6 +738,18 @@
                 console.error('Firestore購読エラー:', err);
                 setSyncBadge(false);
             });
+    }
+
+    // ─────────────────────────────────────────
+    // 顧客管理: customer_records を一括取得してキャッシュ
+    // ─────────────────────────────────────────
+    async function loadCustomerCache() {
+        try {
+            const snap = await db.collection('customer_records').get();
+            customerCache = snap.docs.map(d => d.data());
+        } catch (e) {
+            console.warn('顧客データ読込失敗:', e);
+        }
     }
 
     // ─────────────────────────────────────────
@@ -1039,26 +1055,51 @@
     // 顧客名サジェスト
     // ─────────────────────────────────────────
     function onClientInput() {
-        const val = document.getElementById('clientName').value.trim().toLowerCase();
+        const val = document.getElementById('clientName').value.trim();
         const list = document.getElementById('suggestList');
 
-        if (!val || invoiceCache.length === 0) { list.style.display = 'none'; return; }
+        if (!val) { list.style.display = 'none'; return; }
 
-        // 既存請求書から一意な顧客名を抽出
-        const uniq = [...new Map(
+        const valLower = val.toLowerCase();
+
+        // customer_records から検索（name・agency 両方対象）
+        const fromCustomers = [...new Map(
+            customerCache
+                .filter(c => {
+                    const n = (c.name || '').toLowerCase();
+                    const a = (c.agency || '').toLowerCase();
+                    return n.includes(valLower) || a.includes(valLower);
+                })
+                .map(c => [c.name, c])
+        ).values()].slice(0, 8).map(c => ({
+            name: c.name || '',
+            phone: c.tel1 || c.tel2 || '',
+            email: c.email || '',
+            address: (c.zip ? '〒' + c.zip + ' ' : '') + (c.address || ''),
+        }));
+
+        // 既存請求書からも補完（customer_records にない顧客）
+        const existingNames = new Set(fromCustomers.map(c => c.name));
+        const fromInvoices = [...new Map(
             invoiceCache
-                .filter(inv => (inv.clientName || '').toLowerCase().includes(val))
+                .filter(inv => (inv.clientName || '').toLowerCase().includes(valLower) && !existingNames.has(inv.clientName))
                 .map(inv => [inv.clientName, inv])
-        ).values()];
+        ).values()].slice(0, 3).map(inv => ({
+            name: inv.clientName || '',
+            phone: inv.clientContact || '',
+            email: inv.clientEmail || '',
+            address: inv.clientAddress || '',
+        }));
 
-        if (uniq.length === 0) { list.style.display = 'none'; return; }
+        const combined = [...fromCustomers, ...fromInvoices];
+        if (combined.length === 0) { list.style.display = 'none'; return; }
 
-        list.innerHTML = uniq.slice(0, 8).map(inv => `
-            <div onclick="selectClient('${escHtml(inv.clientName)}','${escHtml(inv.clientContact || '')}','${escHtml(inv.clientEmail || '')}','${escHtml(inv.clientAddress || '')}')"
+        list.innerHTML = combined.map(c => `
+            <div onclick="selectClient('${escHtml(c.name)}','${escHtml(c.phone)}','${escHtml(c.email)}','${escHtml(c.address)}')"
                 style="padding:10px 14px; cursor:pointer; font-size:13px; border-bottom:1px solid var(--glass-border);"
                 onmouseover="this.style.background='rgba(233,30,99,0.1)'" onmouseout="this.style.background=''">
-                <strong>${escHtml(inv.clientName)}</strong>
-                <span style="color:var(--text-muted); font-size:11px; margin-left:8px;">${escHtml(inv.clientEmail || '')}</span>
+                <strong>${escHtml(c.name)}</strong>
+                <span style="color:var(--text-muted); font-size:11px; margin-left:8px;">${escHtml(c.phone)}</span>
             </div>`).join('');
         list.style.display = 'block';
     }
