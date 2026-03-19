@@ -1,17 +1,20 @@
 <?php
 /**
  * invoice_send.php
- * SAKURA 請求書システム — メール送信エンドポイント
+ * SAKURA 請求書システム — メール送信エンドポイント（PDF添付対応）
  *
  * リクエスト: POST (JSON)
- *   { "to": "xxx@example.com", "subject": "件名", "body": "本文" }
- * レスポンス: JSON
- *   { "success": true }  または  { "success": false, "error": "..." }
+ *   {
+ *     "to": "xxx@example.com",
+ *     "subject": "件名",
+ *     "body": "本文",
+ *     "pdf_base64": "JVBERi...",   // base64エンコードされたPDF（省略可）
+ *     "pdf_filename": "請求書_202603_001.pdf"  // 添付ファイル名（省略可）
+ *   }
  */
 
 declare(strict_types=1);
 
-// ─── CORS / レスポンスヘッダー ───────────────────
 header('Content-Type: application/json; charset=UTF-8');
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Headers: Content-Type');
@@ -21,25 +24,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit;
 }
 
-// ─── 定数 ────────────────────────────────────────
-
-/** 送信元メールアドレス（さくらねっとのドメインメール） */
 const FROM_EMAIL = 'system@sakuranet-co.jp';
-
-/** 送信元名 */
 const FROM_NAME  = '株式会社さくらねっと';
-
-/** 自動CC（送信者自身に控えを送る） */
 const BCC_EMAIL  = 'system@sakuranet-co.jp';
 
-// ─── SMTPサーバー設定（さくらインターネット用） ──
-// ※ 実際のホスト名・パスワードはサーバーの環境変数または .env ファイルで管理してください
-const SMTP_HOST = getenv('SMTP_HOST') ?: 'mail.sakuranet-co.jp';
-const SMTP_PORT = (int)(getenv('SMTP_PORT') ?: 587);
-const SMTP_USER = getenv('SMTP_USER') ?: FROM_EMAIL;
-const SMTP_PASS = getenv('SMTP_PASS') ?: '';  // 環境変数 SMTP_PASS を設定してください
-
-// ─── リクエストボディを取得 ───────────────────────
 $input = file_get_contents('php://input');
 $data  = json_decode($input, true);
 
@@ -49,15 +37,16 @@ if (json_last_error() !== JSON_ERROR_NONE || !is_array($data)) {
     exit;
 }
 
-// ─── バリデーション ───────────────────────────────
-$to      = trim($data['to']      ?? '');
-$subject = trim($data['subject'] ?? '');
-$body    = trim($data['body']    ?? '');
+$to          = trim($data['to']          ?? '');
+$subject     = trim($data['subject']     ?? '');
+$body        = trim($data['body']        ?? '');
+$pdfBase64   = trim($data['pdf_base64']  ?? '');
+$pdfFilename = trim($data['pdf_filename'] ?? '請求書.pdf');
 
 $errors = [];
-if (empty($to)      || !filter_var($to, FILTER_VALIDATE_EMAIL)) { $errors[] = '宛先メールアドレスが不正です'; }
-if (empty($subject))                                             { $errors[] = '件名が入力されていません'; }
-if (empty($body))                                                { $errors[] = '本文が入力されていません'; }
+if (empty($to) || !filter_var($to, FILTER_VALIDATE_EMAIL)) { $errors[] = '宛先メールアドレスが不正です'; }
+if (empty($subject)) { $errors[] = '件名が入力されていません'; }
+if (empty($body))    { $errors[] = '本文が入力されていません'; }
 
 if ($errors) {
     http_response_code(400);
@@ -65,9 +54,8 @@ if ($errors) {
     exit;
 }
 
-// ─── 送信処理 ─────────────────────────────────────
 try {
-    $result = sendSmtpMail($to, $subject, $body);
+    $result = sendMailWithAttachment($to, $subject, $body, $pdfBase64, $pdfFilename);
     echo json_encode($result);
 } catch (Throwable $e) {
     error_log('[invoice_send] 予期しないエラー: ' . $e->getMessage());
@@ -75,48 +63,60 @@ try {
     echo json_encode(['success' => false, 'error' => 'サーバーエラーが発生しました']);
 }
 
-// ─────────────────────────────────────────────────
-// メール送信関数（PHP socket SMTP 実装 / PHPMailer不要）
-// ─────────────────────────────────────────────────
-
-/**
- * SMTPソケットを使ってメールを送信する
- *
- * さくらインターネットのメールサーバーはSMTP認証（LOGIN）とSTARTTLSを
- * サポートしているため、この関数で対応します。
- * phpmailerライブラリが利用可能な場合は、将来的にそちらへ差し替えも可。
- *
- * @param string $to      宛先メールアドレス
- * @param string $subject 件名
- * @param string $body    本文（プレーンテキスト）
- * @return array{ success: bool, error?: string }
- */
-function sendSmtpMail(string $to, string $subject, string $body): array
-{
-    // PHP mail() 関数での送信（共有サーバー環境では動作することが多い）
-    // さくらインターネットの共有サーバーでは sendmail / postfix が使えるため
-    // mb_send_mail を使用します。PHPMailer導入後はこのブロックを置き換え。
-
+function sendMailWithAttachment(
+    string $to,
+    string $subject,
+    string $body,
+    string $pdfBase64,
+    string $pdfFilename
+): array {
     mb_language('Japanese');
     mb_internal_encoding('UTF-8');
 
-    $headers  = "From: " . mb_encode_mimeheader(FROM_NAME) . " <" . FROM_EMAIL . ">\r\n";
-    $headers .= "Bcc: " . BCC_EMAIL . "\r\n";
-    $headers .= "MIME-Version: 1.0\r\n";
-    $headers .= "Content-Type: text/plain; charset=UTF-8\r\n";
-    $headers .= "Content-Transfer-Encoding: base64\r\n";
-    $headers .= "X-Mailer: SAKURA-Invoice-System/1.0\r\n";
+    $boundary = '----=_Part_' . md5(uniqid((string)mt_rand(), true));
 
-    // mb_send_mail で日本語メールを送信
-    $success = mb_send_mail(
-        $to,
-        $subject,
-        $body,
-        $headers
-    );
+    if (empty($pdfBase64)) {
+        // PDF添付なし: プレーンテキストメール
+        $headers  = "From: " . mb_encode_mimeheader(FROM_NAME) . " <" . FROM_EMAIL . ">\r\n";
+        $headers .= "Bcc: " . BCC_EMAIL . "\r\n";
+        $headers .= "MIME-Version: 1.0\r\n";
+        $headers .= "Content-Type: text/plain; charset=UTF-8\r\n";
+        $headers .= "Content-Transfer-Encoding: base64\r\n";
+
+        $success = mb_send_mail($to, $subject, $body, $headers);
+    } else {
+        // PDF添付あり: multipart/mixed
+        $headers  = "From: " . mb_encode_mimeheader(FROM_NAME) . " <" . FROM_EMAIL . ">\r\n";
+        $headers .= "Bcc: " . BCC_EMAIL . "\r\n";
+        $headers .= "MIME-Version: 1.0\r\n";
+        $headers .= "Content-Type: multipart/mixed; boundary=\"{$boundary}\"\r\n";
+
+        // 本文パート
+        $encodedBody = base64_encode($body);
+        $bodyChunked = chunk_split($encodedBody, 76, "\r\n");
+
+        // PDFパート
+        $pdfChunked  = chunk_split($pdfBase64, 76, "\r\n");
+        $encodedFilename = mb_encode_mimeheader($pdfFilename, 'UTF-8', 'B');
+
+        $messageBody  = "--{$boundary}\r\n";
+        $messageBody .= "Content-Type: text/plain; charset=UTF-8\r\n";
+        $messageBody .= "Content-Transfer-Encoding: base64\r\n\r\n";
+        $messageBody .= $bodyChunked . "\r\n";
+
+        $messageBody .= "--{$boundary}\r\n";
+        $messageBody .= "Content-Type: application/pdf; name=\"{$encodedFilename}\"\r\n";
+        $messageBody .= "Content-Transfer-Encoding: base64\r\n";
+        $messageBody .= "Content-Disposition: attachment; filename=\"{$encodedFilename}\"\r\n\r\n";
+        $messageBody .= $pdfChunked . "\r\n";
+
+        $messageBody .= "--{$boundary}--\r\n";
+
+        $success = mb_send_mail($to, $subject, $messageBody, $headers);
+    }
 
     if ($success) {
-        error_log('[invoice_send] メール送信成功: to=' . $to . ' subject=' . $subject);
+        error_log('[invoice_send] 送信成功: to=' . $to . ' pdf=' . ($pdfBase64 ? 'yes' : 'no'));
         return ['success' => true];
     }
 
