@@ -733,8 +733,13 @@
                         <input type="date" id="invDate">
                     </div>
                     <div class="form-group">
-                        <label>支払期限</label>
-                        <input type="date" id="invDueDate">
+                        <label>請求対象月</label>
+                        <div style="display:flex; gap:6px; align-items:center;">
+                            <select id="billingYear" style="flex:1;"></select>
+                            <span style="color:var(--text-muted);">年</span>
+                            <select id="billingMonth" style="flex:1;"></select>
+                            <span style="color:var(--text-muted);">月分</span>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -1061,14 +1066,38 @@
     // ─────────────────────────────────────────
     function setDefaultDates() {
         const today = new Date();
-        const todayStr = formatDateInput(today);
+        document.getElementById('invDate').value = formatDateInput(today);
+        // 請求対象月デフォルト: 15日以前は前月、16日以降は当月
+        const bm = today.getDate() <= 15
+            ? new Date(today.getFullYear(), today.getMonth() - 1, 1)
+            : today;
+        initBillingMonthSelects(bm.getFullYear(), bm.getMonth() + 1);
+    }
 
-        // 翌月末を支払期限に設定
-        const due = new Date(today.getFullYear(), today.getMonth() + 2, 0);
-        const dueStr = formatDateInput(due);
+    function initBillingMonthSelects(year, month) {
+        const yearSel  = document.getElementById('billingYear');
+        const monthSel = document.getElementById('billingMonth');
+        yearSel.innerHTML = '';
+        const curY = new Date().getFullYear();
+        for (let y = curY - 2; y <= curY + 1; y++) {
+            yearSel.innerHTML += `<option value="${y}" ${y===year?'selected':''}>${y}</option>`;
+        }
+        monthSel.innerHTML = '';
+        for (let m = 1; m <= 12; m++) {
+            monthSel.innerHTML += `<option value="${m}" ${m===month?'selected':''}>${m}</option>`;
+        }
+    }
 
-        document.getElementById('invDate').value    = todayStr;
-        document.getElementById('invDueDate').value = dueStr;
+    function getBillingMonthValue() {
+        const y = document.getElementById('billingYear').value;
+        const m = String(document.getElementById('billingMonth').value).padStart(2,'0');
+        return `${y}-${m}`;  // "2026-03"
+    }
+
+    function getBillingMonthLabel() {
+        const y = document.getElementById('billingYear').value;
+        const m = document.getElementById('billingMonth').value;
+        return `${y}年${m}月分`;  // "2026年3月分"
     }
 
     /** Date → YYYY-MM-DD 変換 */
@@ -1238,7 +1267,9 @@
             document.getElementById('invNumber').value        = data.invoiceNumber  || '';
             document.getElementById('invStatus').value        = data.status         || 'draft';
             document.getElementById('invDate').value          = data.invDate        || '';
-            document.getElementById('invDueDate').value       = data.invDueDate     || '';
+            const bm = data.billingMonth || getBillingMonthValue();
+            const [by, bmm] = bm.split('-');
+            initBillingMonthSelects(parseInt(by), parseInt(bmm));
             document.getElementById('clientName').value       = data.clientName     || '';
             document.getElementById('clientContact').value    = data.clientContact  || '';
             document.getElementById('clientEmail').value      = data.clientEmail    || '';
@@ -1292,7 +1323,7 @@
             invoiceNumber:  document.getElementById('invNumber').value,
             status:         document.getElementById('invStatus').value,
             invDate:        document.getElementById('invDate').value,
-            invDueDate:     document.getElementById('invDueDate').value,
+            billingMonth:   getBillingMonthValue(),
             clientName:     document.getElementById('clientName').value.trim(),
             clientContact:  document.getElementById('clientContact').value.trim(),
             clientEmail:    document.getElementById('clientEmail').value.trim(),
@@ -1597,7 +1628,7 @@
 
 【請求書番号】${data.invoiceNumber}
 【発行日】${data.invDate}
-【お支払期限】${data.invDueDate}
+【請求対象月】${getBillingMonthLabel()}
 【ご請求金額（税込）】${formatCurrency(data.total)}
 
 ご不明な点がございましたら、お気軽にお問い合わせください。
@@ -1654,7 +1685,7 @@ E-mail: system@sakuranet-co.jp
     // フォームクリア
     // ─────────────────────────────────────────
     function clearForm() {
-        ['invNumber','invDate','invDueDate','clientName','clientContact','clientEmail','clientAddress','invNote'].forEach(id => {
+        ['invNumber','invDate','clientName','clientContact','clientEmail','clientAddress','invNote'].forEach(id => {
             document.getElementById(id).value = '';
         });
         document.getElementById('invStatus').value = 'draft';
