@@ -1598,8 +1598,7 @@
                 <div class="pi-fc"><span class="pi-fc-lbl">消費税額</span><span class="pi-fc-val">¥${formatNum(data.tax)}</span></div>
                 <div class="pi-fc"><span class="pi-fc-lbl">合　計</span><span class="pi-fc-val" style="font-size:16px; color:#111;">¥${formatNum(data.total)}</span></div>
             </div>
-            ${data.note ? `<div class="pi-note"><strong>備考：</strong>${escHtml(data.note).replace(/
-/g,'<br>')}</div>` : ''}
+            ${data.note ? `<div class="pi-note"><strong>備考：</strong>${escHtml(data.note).replace(/\n/g,'<br>')}</div>` : ''}
         </div>`;
     }
 
