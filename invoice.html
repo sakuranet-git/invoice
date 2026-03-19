@@ -1780,6 +1780,31 @@ E-mail: system@sakuranet-co.jp
         document.addEventListener('mousemove', onMove);
         document.addEventListener('mouseup', onUp);
     }
+
+    // ─────────────────────────────────────────
+    // PDF生成（html2pdf.js）
+    // ─────────────────────────────────────────
+    async function generatePdfBase64() {
+        const data = collectFormData();
+        const bm = getBillingMonthValue().replace('-','');  // "202603"
+        const filename = `請求書_${bm}_${data.invoiceNumber}.pdf`;
+
+        // a4Canvasをターゲットにする（印鑑の絶対配置を含む）
+        const element = document.getElementById('a4Canvas');
+
+        const opt = {
+            margin:      [0, 0, 0, 0],
+            filename:    filename,
+            image:       { type: 'jpeg', quality: 0.98 },
+            html2canvas: { scale: 2, useCORS: true, backgroundColor: '#fff' },
+            jsPDF:       { unit: 'px', format: [794, 1123], orientation: 'portrait' }
+        };
+
+        // base64文字列として取得
+        const pdf = await html2pdf().set(opt).from(element).outputPdf('datauristring');
+        // "data:application/pdf;base64,XXXX..." → "XXXX..." 部分だけ
+        return { base64: pdf.split(',')[1], filename };
+    }
 </script>
 
 </body>
