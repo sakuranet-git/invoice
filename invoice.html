@@ -1335,8 +1335,9 @@
         document.getElementById('clientName').value    = src.clientName    || '';
         document.getElementById('clientContact').value = src.clientContact || '';
         document.getElementById('clientEmail').value   = src.clientEmail   || '';
-        document.getElementById('clientAddress').value = src.clientAddress || '';
-        document.getElementById('invNote').value       = src.note          || '';
+        document.getElementById('clientAddress').value = src.clientAddress  || '';
+        document.getElementById('paymentMethod').value = src.paymentMethod  || '';
+        document.getElementById('invNote').value       = src.note           || '';
 
         // 品目の復元
         renderItems(src.items || []);
