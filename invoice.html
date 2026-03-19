@@ -475,6 +475,68 @@
             .form-grid { grid-template-columns: 1fr; }
             .summary-bar { gap: 14px; }
         }
+
+        /* ===== 顧客グリッドビュー ===== */
+        #customerView {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        .customer-view-header {
+            padding: 14px 24px;
+            background: var(--bg-panel);
+            border-bottom: 1px solid var(--glass-border);
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+        .customer-view-header h2 { font-size: 15px; font-weight: 700; flex: 1; }
+        .customer-grid-wrap { flex: 1; overflow-y: auto; padding: 20px; }
+        .customer-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+            gap: 14px;
+        }
+        .cust-card {
+            background: var(--glass);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius);
+            padding: 16px;
+            cursor: pointer;
+            transition: all 0.2s var(--transition);
+        }
+        .cust-card:hover {
+            border-color: var(--pink);
+            background: var(--pink-light);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(233,30,99,0.2);
+        }
+        .cust-card-name { font-size: 15px; font-weight: 700; margin-bottom: 5px; color: var(--text); }
+        .cust-card-agency { font-size: 11px; color: #a78bfa; margin-bottom: 8px; }
+        .cust-card-info { font-size: 12px; color: var(--text-muted); display: flex; flex-direction: column; gap: 3px; }
+        .cust-card-footer {
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px solid var(--glass-border);
+            font-size: 11px;
+            color: var(--text-muted);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        /* 月別ヘッダー（請求書サイドバー内） */
+        .month-header {
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            padding: 10px 8px 4px;
+            border-top: 1px solid var(--glass-border);
+            margin-top: 4px;
+        }
+        .month-header:first-child { border-top: none; margin-top: 0; }
     </style>
 </head>
 <body>
@@ -490,8 +552,24 @@
     </div>
 </header>
 
+<!-- ===== 顧客グリッドビュー ===== -->
+<div id="customerView">
+    <div class="customer-view-header">
+        <h2>👥 顧客一覧</h2>
+        <input type="text" class="search-input" id="customerSearch"
+               placeholder="顧客名・電話番号で検索..."
+               oninput="renderCustomerGrid(this.value)"
+               style="width:260px;">
+    </div>
+    <div class="customer-grid-wrap">
+        <div class="customer-grid" id="customerGrid">
+            <p style="text-align:center; color:var(--text-muted); padding:40px; font-size:13px;">データを読み込み中...</p>
+        </div>
+    </div>
+</div>
+
 <!-- ===== メインレイアウト ===== -->
-<div class="app-layout">
+<div class="app-layout" id="invoiceView" style="display:none;">
 
     <!-- === サイドバー：請求書一覧 === -->
     <aside class="sidebar">
@@ -511,6 +589,7 @@
 
         <!-- ツールバー -->
         <div class="toolbar">
+            <button class="btn btn-ghost" id="backBtn" onclick="backToCustomers()" style="display:none;">← 顧客一覧</button>
             <button class="btn btn-primary" onclick="newInvoice()">＋ 新規作成</button>
             <button class="btn btn-ghost" onclick="duplicateInvoice()">📋 複写（前回コピー）</button>
             <button class="btn btn-ghost" onclick="saveInvoice()">💾 保存</button>
@@ -695,6 +774,12 @@
     /** 顧客管理キャッシュ（customer_records） */
     let customerCache = [];
 
+    /** 現在選択中の顧客名（null = 顧客グリッド表示中） */
+    let currentCustomerFilter = null;
+
+    /** 現在選択中の顧客データ */
+    let currentCustomerData = null;
+
     /** Firestoreリアルタイム購読の解除関数 */
     let unsubscribeInvoices = null;
 
@@ -732,7 +817,10 @@
             .orderBy('createdAt', 'desc')
             .onSnapshot(snapshot => {
                 invoiceCache = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                renderInvoiceList(invoiceCache);
+                const list = currentCustomerFilter
+                    ? invoiceCache.filter(inv => inv.clientName === currentCustomerFilter)
+                    : invoiceCache;
+                renderInvoiceList(list);
                 setSyncBadge(true);
             }, err => {
                 console.error('Firestore購読エラー:', err);
@@ -747,9 +835,95 @@
         try {
             const snap = await db.collection('customer_records').get();
             customerCache = snap.docs.map(d => d.data());
+            renderCustomerGrid();
         } catch (e) {
             console.warn('顧客データ読込失敗:', e);
         }
+    }
+
+    // ─────────────────────────────────────────
+    // 顧客グリッド：描画
+    // ─────────────────────────────────────────
+    function renderCustomerGrid(searchTerm = '') {
+        const grid = document.getElementById('customerGrid');
+        const q = (searchTerm || '').toLowerCase().trim();
+
+        let customers = customerCache;
+        if (q) {
+            customers = customers.filter(c =>
+                (c.name   || '').toLowerCase().includes(q) ||
+                (c.agency || '').toLowerCase().includes(q) ||
+                (c.tel1   || '').includes(q) ||
+                (c.tel2   || '').includes(q)
+            );
+        }
+
+        if (customers.length === 0) {
+            grid.innerHTML = '<p style="text-align:center; color:var(--text-muted); padding:40px; font-size:13px;">顧客が見つかりません</p>';
+            return;
+        }
+
+        grid.innerHTML = customers.map(c => {
+            const name     = c.name || '（名前なし）';
+            const agency   = c.agency || '';
+            const tel      = c.tel1 || c.tel2 || '';
+            const email    = c.email || '';
+            const invCount = invoiceCache.filter(inv => inv.clientName === name).length;
+
+            return `
+            <div class="cust-card" onclick="openCustomerInvoices(this.dataset.name)" data-name="${escHtml(name)}">
+                <div class="cust-card-name">${escHtml(name)}</div>
+                ${agency ? `<div class="cust-card-agency">${escHtml(agency)}</div>` : ''}
+                <div class="cust-card-info">
+                    ${tel   ? `<span>📞 ${escHtml(tel)}</span>`   : ''}
+                    ${email ? `<span>✉ ${escHtml(email)}</span>` : ''}
+                </div>
+                <div class="cust-card-footer">
+                    <span>🧾 請求書</span>
+                    <span style="font-weight:700; color:${invCount > 0 ? '#a78bfa' : 'var(--text-muted)'};">${invCount} 件</span>
+                </div>
+            </div>`;
+        }).join('');
+    }
+
+    // ─────────────────────────────────────────
+    // 顧客カードクリック → 請求書ビューへ切り替え
+    // ─────────────────────────────────────────
+    function openCustomerInvoices(name) {
+        currentCustomerFilter = name;
+        currentCustomerData   = customerCache.find(c => c.name === name) || null;
+
+        // ビュー切り替え
+        document.getElementById('customerView').style.display = 'none';
+        document.getElementById('invoiceView').style.display  = 'flex';
+        document.getElementById('backBtn').style.display      = '';
+
+        // サイドバーヘッダー更新
+        document.querySelector('.sidebar-header h2').textContent = `🧾 ${name}`;
+
+        // 該当顧客の請求書を月別表示
+        const filtered = invoiceCache.filter(inv => inv.clientName === name);
+        renderInvoiceList(filtered);
+
+        // 新規請求書（顧客情報自動入力）
+        newInvoice();
+    }
+
+    // ─────────────────────────────────────────
+    // 顧客一覧に戻る
+    // ─────────────────────────────────────────
+    function backToCustomers() {
+        currentCustomerFilter = null;
+        currentCustomerData   = null;
+
+        document.getElementById('invoiceView').style.display  = 'none';
+        document.getElementById('customerView').style.display = 'flex';
+        document.getElementById('backBtn').style.display      = 'none';
+
+        document.querySelector('.sidebar-header h2').textContent = '📋 請求書一覧';
+
+        const search = document.getElementById('customerSearch').value;
+        renderCustomerGrid(search);
     }
 
     // ─────────────────────────────────────────
@@ -796,22 +970,60 @@
     // ─────────────────────────────────────────
     function renderInvoiceList(list) {
         const container = document.getElementById('invoiceList');
+
+        const statusMap = {
+            draft:  { label: '下書き',  cls: 'status-draft'  },
+            sent:   { label: '送信済み', cls: 'status-sent'   },
+            paid:   { label: '入金済み', cls: 'status-paid'   },
+            unpaid: { label: '未入金',  cls: 'status-unpaid' },
+        };
+
         if (list.length === 0) {
-            container.innerHTML = '<p style="text-align:center; color:var(--text-muted); padding:24px; font-size:13px;">請求書がありません</p>';
+            container.innerHTML = '<p style="text-align:center; color:var(--text-muted); padding:24px; font-size:13px;">' +
+                (currentCustomerFilter ? 'この顧客の請求書はありません<br><small>右側で新規作成できます</small>' : '請求書がありません') +
+                '</p>';
             return;
         }
 
+        // 顧客フィルター中は月別グルーピング
+        if (currentCustomerFilter) {
+            const byMonth = {};
+            list.forEach(inv => {
+                const ym = (inv.invDate || '').substring(0, 7) || 'nodate';
+                if (!byMonth[ym]) byMonth[ym] = [];
+                byMonth[ym].push(inv);
+            });
+
+            const months = Object.keys(byMonth).sort().reverse();
+            container.innerHTML = months.map(ym => {
+                const label = ym === 'nodate' ? '日付なし' : (() => {
+                    const [y, m] = ym.split('-');
+                    return `${y}年${parseInt(m)}月分`;
+                })();
+
+                const cards = byMonth[ym].map(inv => {
+                    const s = statusMap[inv.status] || statusMap.draft;
+                    const isActive = currentInvoice && currentInvoice.id === inv.id ? 'active' : '';
+                    return `
+                    <div class="inv-card ${isActive}" onclick="loadInvoice('${inv.id}')">
+                        <div class="inv-card-num">${escHtml(inv.invoiceNumber || '-')}</div>
+                        <div class="inv-card-meta">
+                            <span>${escHtml(inv.invDate || '')}</span>
+                            <span class="status-badge ${s.cls}">${s.label}</span>
+                        </div>
+                        <div style="font-size:13px; color:#a78bfa; font-weight:700; margin-top:4px;">${formatCurrency(inv.total || 0)}</div>
+                    </div>`;
+                }).join('');
+
+                return `<div class="month-header">📅 ${label}</div>${cards}`;
+            }).join('');
+            return;
+        }
+
+        // 通常表示（全一覧）
         container.innerHTML = list.map(inv => {
-            const statusMap = {
-                draft:  { label: '下書き',  cls: 'status-draft'  },
-                sent:   { label: '送信済み', cls: 'status-sent'   },
-                paid:   { label: '入金済み', cls: 'status-paid'   },
-                unpaid: { label: '未入金',  cls: 'status-unpaid' },
-            };
             const s = statusMap[inv.status] || statusMap.draft;
             const isActive = currentInvoice && currentInvoice.id === inv.id ? 'active' : '';
-            const total = formatCurrency(inv.total || 0);
-
             return `
             <div class="inv-card ${isActive}" onclick="loadInvoice('${inv.id}')">
                 <div class="inv-card-num">${escHtml(inv.invoiceNumber || '-')}</div>
@@ -820,7 +1032,7 @@
                     <span>${escHtml(inv.invDate || '')}</span>
                     <span class="status-badge ${s.cls}">${s.label}</span>
                 </div>
-                <div style="font-size:13px; color:#a78bfa; font-weight:700; margin-top:4px;">${total}</div>
+                <div style="font-size:13px; color:#a78bfa; font-weight:700; margin-top:4px;">${formatCurrency(inv.total || 0)}</div>
             </div>`;
         }).join('');
     }
@@ -830,11 +1042,14 @@
     // ─────────────────────────────────────────
     function filterInvoiceList() {
         const q = document.getElementById('searchBox').value.trim().toLowerCase();
-        const filtered = q
-            ? invoiceCache.filter(inv =>
-                (inv.clientName || '').toLowerCase().includes(q) ||
-                (inv.invoiceNumber || '').toLowerCase().includes(q))
+        let base = currentCustomerFilter
+            ? invoiceCache.filter(inv => inv.clientName === currentCustomerFilter)
             : invoiceCache;
+        const filtered = q
+            ? base.filter(inv =>
+                (inv.clientName    || '').toLowerCase().includes(q) ||
+                (inv.invoiceNumber || '').toLowerCase().includes(q))
+            : base;
         renderInvoiceList(filtered);
     }
 
@@ -850,7 +1065,20 @@
         document.getElementById('itemsBody').innerHTML = '';
         addItem();
         updateTotals();
-        renderInvoiceList(invoiceCache);
+
+        // 顧客選択中なら顧客情報を自動入力
+        if (currentCustomerFilter && currentCustomerData) {
+            const c = currentCustomerData;
+            document.getElementById('clientName').value    = c.name    || '';
+            document.getElementById('clientContact').value = c.tel1 || c.tel2 || '';
+            document.getElementById('clientEmail').value   = c.email   || '';
+            document.getElementById('clientAddress').value = (c.zip ? '〒' + c.zip + ' ' : '') + (c.address || '');
+        }
+
+        const filtered = currentCustomerFilter
+            ? invoiceCache.filter(inv => inv.clientName === currentCustomerFilter)
+            : invoiceCache;
+        renderInvoiceList(filtered);
     }
 
     // ─────────────────────────────────────────
