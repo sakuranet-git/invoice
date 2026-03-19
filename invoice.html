@@ -147,7 +147,14 @@
 
         .inv-card-num  { font-size: 11px; color: var(--text-muted); margin-bottom: 3px; }
         .inv-card-name { font-size: 14px; font-weight: 700; color: var(--text); margin-bottom: 4px; }
-        .inv-card-meta { font-size: 11px; color: var(--text-muted); display: flex; justify-content: space-between; }
+        .inv-card-meta { font-size: 11px; color: var(--text-muted); display: flex; justify-content: space-between; align-items: center; }
+        .inv-card-del {
+            font-size: 10px; padding: 2px 6px; border-radius: 4px;
+            background: rgba(239,68,68,0.15); color: #ef4444;
+            border: 1px solid rgba(239,68,68,0.3); cursor: pointer;
+            flex-shrink: 0; line-height: 1.4;
+        }
+        .inv-card-del:hover { background: rgba(239,68,68,0.35); }
 
         .status-badge {
             display: inline-block;
@@ -1195,6 +1202,7 @@
                         <div class="inv-card-meta">
                             <span>${escHtml(inv.invDate || '')}</span>
                             <span class="status-badge ${s.cls}">${s.label}</span>
+                            <button class="inv-card-del" onclick="deleteInvoice('${inv.id}',event)">削除</button>
                         </div>
                         <div style="font-size:13px; color:#a78bfa; font-weight:700; margin-top:4px;">${formatCurrency(inv.total || 0)}</div>
                     </div>`;
@@ -1216,6 +1224,7 @@
                 <div class="inv-card-meta">
                     <span>${escHtml(inv.invDate || '')}</span>
                     <span class="status-badge ${s.cls}">${s.label}</span>
+                    <button class="inv-card-del" onclick="deleteInvoice('${inv.id}',event)">削除</button>
                 </div>
                 <div style="font-size:13px; color:#a78bfa; font-weight:700; margin-top:4px;">${formatCurrency(inv.total || 0)}</div>
             </div>`;
@@ -1354,6 +1363,24 @@
         } catch (e) {
             console.error('保存エラー:', e);
             showToast('❌ 保存に失敗しました: ' + e.message);
+        }
+    }
+
+    // ─────────────────────────────────────────
+    // 請求書削除
+    // ─────────────────────────────────────────
+    async function deleteInvoice(id, event) {
+        event.stopPropagation();
+        if (!confirm('この請求書を削除しますか？\n（この操作は取り消せません）')) return;
+        try {
+            await db.collection('invoices').doc(id).delete();
+            if (currentInvoice && currentInvoice.id === id) {
+                newInvoice();
+            }
+            showToast('🗑 削除しました');
+        } catch (e) {
+            console.error('削除エラー:', e);
+            showToast('❌ 削除に失敗しました: ' + e.message);
         }
     }
 
