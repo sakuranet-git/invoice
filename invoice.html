@@ -1065,6 +1065,11 @@
         <!-- A4キャンバス -->
         <div id="a4Canvas" style="width:794px; min-height:1123px; background:#fff; margin:0 auto; position:relative; box-shadow:0 4px 24px rgba(0,0,0,0.5);">
             <div id="a4Content"></div>
+            <!-- 自社情報（ドラッグ可能） -->
+            <div id="ourSideBox"
+                style="position:absolute; cursor:move; user-select:none;"
+                title="ドラッグで位置を変更できます"
+                onmousedown="startOurSideDrag(event)"></div>
             <!-- 会社印（ドラッグ可能） -->
             <img id="stampCo" src="" alt="社印"
                 style="position:absolute; width:64px; height:64px; object-fit:contain; cursor:grab; user-select:none; opacity:0.9;"
@@ -2077,14 +2082,6 @@
                         ${clientAddr ? `<div style="font-size:11px;color:#666;">${escHtml(clientAddr)}</div>` : ''}
                         ${data.clientContact ? `<div style="font-size:11px;color:#555;">TEL &nbsp;${escHtml(data.clientContact)}</div>` : ''}
                     </div>
-                    <div class="pi-our-side">
-                        <div>〒532-0012</div>
-                        <div>大阪市淀川区木川東4-3-34-514</div>
-                        <div class="pi-our-name">株式会社さくらねっと</div>
-                        <div>TEL 06-7777-2720&emsp;FAX 06-6303-3767</div>
-                        <div>担当者：伏見</div>
-                        <div class="pi-our-reg">登録番号：${COMPANY_REG_NUMBER}</div>
-                    </div>
                 </div>
 
                 <table class="pi-table">
@@ -2131,6 +2128,19 @@
         co.style.top   = coPos.y  + 'px';
         per.style.left = perPos.x + 'px';
         per.style.top  = perPos.y + 'px';
+        // 自社情報ブロック（ドラッグ可能）
+        const ourSideBox = document.getElementById('ourSideBox');
+        ourSideBox.innerHTML = `<div class="pi-our-side">
+            <div>〒532-0012</div>
+            <div>大阪市淀川区木川東4-3-34-514</div>
+            <div class="pi-our-name">株式会社さくらねっと</div>
+            <div>TEL 06-7777-2720&emsp;FAX 06-6303-3767</div>
+            <div>担当者：伏見</div>
+            <div class="pi-our-reg">登録番号：${COMPANY_REG_NUMBER}</div>
+        </div>`;
+        const ourPos = JSON.parse(localStorage.getItem('ourSidePos') || 'null') || { x: 430, y: 130 };
+        ourSideBox.style.left = ourPos.x + 'px';
+        ourSideBox.style.top  = ourPos.y + 'px';
         document.getElementById('previewModal').style.display = 'block';
     }
 
@@ -2225,6 +2235,41 @@
         toast.textContent = msg;
         toast.classList.add('show');
         setTimeout(() => toast.classList.remove('show'), 3000);
+    }
+
+    // ─────────────────────────────────────────
+    // 自社情報ドラッグ機能
+    // ─────────────────────────────────────────
+    function startOurSideDrag(e) {
+        e.preventDefault();
+        const el = document.getElementById('ourSideBox');
+        const canvas = document.getElementById('a4Canvas');
+        const startX = e.clientX - el.offsetLeft;
+        const startY = e.clientY - el.offsetTop;
+
+        el.style.cursor = 'grabbing';
+
+        function onMove(ev) {
+            let x = ev.clientX - startX;
+            let y = ev.clientY - startY;
+            x = Math.max(0, Math.min(x, 794 - el.offsetWidth));
+            y = Math.max(0, Math.min(y, canvas.offsetHeight - el.offsetHeight));
+            el.style.left = x + 'px';
+            el.style.top  = y + 'px';
+        }
+
+        function onUp() {
+            el.style.cursor = 'move';
+            document.removeEventListener('mousemove', onMove);
+            document.removeEventListener('mouseup', onUp);
+            localStorage.setItem('ourSidePos', JSON.stringify({
+                x: parseInt(el.style.left),
+                y: parseInt(el.style.top)
+            }));
+        }
+
+        document.addEventListener('mousemove', onMove);
+        document.addEventListener('mouseup', onUp);
     }
 
     // ─────────────────────────────────────────
