@@ -955,8 +955,9 @@
                         <tbody id="itemsBody"></tbody>
                     </table>
                 </div>
-                <div style="margin-top:10px;">
+                <div style="margin-top:10px; display:flex; gap:8px;">
                     <button class="btn btn-ghost btn-sm" onclick="addItem()">＋ 品目を追加</button>
+                    <button class="btn btn-ghost btn-sm" onclick="addHeader()" style="color:#7c3aed; border-color:rgba(124,58,237,0.4);">＋ 概要欄を追加</button>
                 </div>
                 <div class="totals-section">
                     <table class="totals-table">
@@ -1888,10 +1889,8 @@
     /** 品目行を追加 */
     function addItem(name = '', qty = 1, unit = '式', price = 0, note = '') {
         const tbody = document.getElementById('itemsBody');
-        const idx   = tbody.rows.length;
-
         const tr = document.createElement('tr');
-        tr.dataset.idx = idx;
+        tr.dataset.type = 'item';
         tr.innerHTML = `
             <td><input type="text"   class="item-name"  value="${escHtml(name)}"  placeholder="例：出張サポート費" oninput="updateTotals()"></td>
             <td><input type="number" class="item-qty"   value="${qty}"  min="1"    style="width:60px;"  onchange="updateTotals()"></td>
@@ -1905,6 +1904,23 @@
         updateTotals();
     }
 
+    /** 概要欄行を追加（計算なし・テキストのみ） */
+    function addHeader(text = '') {
+        const tbody = document.getElementById('itemsBody');
+        const tr = document.createElement('tr');
+        tr.dataset.type = 'header';
+        tr.style.cssText = 'background:rgba(124,58,237,0.06);';
+        tr.innerHTML = `
+            <td colspan="6" style="border-left:3px solid rgba(124,58,237,0.4); padding:6px 8px;">
+                <input type="text" class="item-header-text" value="${escHtml(text)}"
+                    placeholder="例：【初期費用】"
+                    style="width:100%; font-weight:700; font-size:13px; background:transparent; border:none; outline:none; color:#333;">
+            </td>
+            <td><button class="del-btn" onclick="removeItem(this)" title="削除">✕</button></td>
+        `;
+        tbody.appendChild(tr);
+    }
+
     /** 品目行を削除 */
     function removeItem(btn) {
         btn.closest('tr').remove();
@@ -1915,18 +1931,26 @@
     function renderItems(items) {
         document.getElementById('itemsBody').innerHTML = '';
         if (items.length === 0) { addItem(); return; }
-        items.forEach(item => addItem(item.name, item.qty, item.unit, item.price, item.note || ''));
+        items.forEach(item => {
+            if (item.type === 'header') addHeader(item.name);
+            else addItem(item.name, item.qty, item.unit, item.price, item.note || '');
+        });
     }
 
     /** 品目を配列として収集 */
     function collectItems() {
-        return [...document.querySelectorAll('#itemsBody tr')].map(tr => ({
-            name:  tr.querySelector('.item-name')?.value  || '',
-            qty:   parseFloat(tr.querySelector('.item-qty')?.value)  || 0,
-            unit:  tr.querySelector('.item-unit')?.value  || '式',
-            price: parseFloat(tr.querySelector('.item-price')?.value) || 0,
-            note:  tr.querySelector('.item-note')?.value  || '',
-        }));
+        return [...document.querySelectorAll('#itemsBody tr')].map(tr => {
+            if (tr.dataset.type === 'header') {
+                return { type: 'header', name: tr.querySelector('.item-header-text')?.value || '' };
+            }
+            return {
+                name:  tr.querySelector('.item-name')?.value  || '',
+                qty:   parseFloat(tr.querySelector('.item-qty')?.value)  || 0,
+                unit:  tr.querySelector('.item-unit')?.value  || '式',
+                price: parseFloat(tr.querySelector('.item-price')?.value) || 0,
+                note:  tr.querySelector('.item-note')?.value  || '',
+            };
+        });
     }
 
     // ─────────────────────────────────────────
@@ -1935,7 +1959,7 @@
     const TAX_RATE = 0.1;
 
     function calcTotals(items) {
-        const subtotal = items.reduce((sum, it) => sum + (it.qty * it.price), 0);
+        const subtotal = items.reduce((sum, it) => sum + (it.type === 'header' ? 0 : (it.qty * it.price)), 0);
         const tax      = Math.floor(subtotal * TAX_RATE);
         const total    = subtotal + tax;
         return { subtotal, tax, total };
@@ -2040,15 +2064,21 @@
         const addrM = (data.clientAddress || '').match(/^(〒[\d-]+)\s*([\s\S]*)$/);
         const clientZip  = addrM ? addrM[1] : '';
         const clientAddr = addrM ? addrM[2].trim() : (data.clientAddress || '');
-        const rows = data.items.map(it => `
-            <tr>
+        const rows = data.items.map(it => {
+            if (it.type === 'header') {
+                return `<tr style="background:rgba(124,58,237,0.06);">
+                    <td colspan="6" style="font-weight:700;color:#333;font-size:12px;border-left:3px solid rgba(124,58,237,0.4);">${escHtml(it.name)}</td>
+                </tr>`;
+            }
+            return `<tr>
                 <td>${escHtml(it.name)}</td>
                 <td class="pi-td-r">${it.qty}</td>
                 <td class="pi-td-c">${escHtml(it.unit)}</td>
                 <td class="pi-td-r">¥${formatNum(it.price)}</td>
                 <td class="pi-td-r">¥${formatNum(it.qty * it.price)}</td>
                 <td style="font-size:11px;color:#555;">${escHtml(it.note || '')}</td>
-            </tr>`).join('');
+            </tr>`;
+        }).join('');
 
         const emptyRows = Math.max(0, 20 - data.items.length);
         const blankRows = Array(emptyRows).fill('<tr><td>&nbsp;</td><td></td><td></td><td></td><td></td><td></td></tr>').join('');
