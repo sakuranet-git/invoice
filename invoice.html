@@ -1583,6 +1583,10 @@
         renderItems(src.items || []);
         updateTotals();
 
+        applyLockUI(false);
+        const tsArea = document.getElementById('timestampArea');
+        if (tsArea) tsArea.style.display = 'none';
+
         showToast('📋 請求書を複写しました。内容を確認・編集してください。');
     }
 
@@ -1687,6 +1691,7 @@
             currentInvoice.status = 'confirmed';
             currentInvoice.lockedAt = { toDate: () => new Date() }; // ローカルタイムスタンプ（表示用）
             applyLockUI(true);
+            showTimestamps(currentInvoice);
             showToast('🔒 確定しました（電子帳簿保存法対応）');
         } catch (e) {
             console.error('確定エラー:', e);
