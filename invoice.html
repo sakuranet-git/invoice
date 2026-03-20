@@ -841,10 +841,11 @@
         <div class="toolbar">
             <button class="btn btn-ghost" id="backBtn" onclick="backToCustomers()" style="display:none;">← 顧客一覧</button>
             <button class="btn btn-primary" onclick="newInvoice()">＋ 新規作成</button>
-            <button class="btn btn-ghost" onclick="duplicateInvoice()">📋 複写（前回コピー）</button>
+            <button class="btn btn-ghost" onclick="duplicateInvoice()" title="①左メニューでコピー元の請求書を開く　②このボタンを押す　→ 顧客・品目を引き継いだ新規下書きが作成されます">📋 複写（前回コピー）</button>
             <button class="btn btn-ghost" onclick="saveInvoice()">💾 保存</button>
             <button class="btn btn-ghost" id="confirmBtn" onclick="confirmInvoice()" style="color:#e91e63;border-color:rgba(233,30,99,0.4);" title="確定すると編集・削除できなくなります">🔒 確定</button>
             <button class="btn btn-ghost" id="testModeBtn" onclick="toggleTestMode()" title="テストモード：確定済みでも編集・削除可能" style="color:#f59e0b;border-color:rgba(245,158,11,0.4);font-size:11px;">🧪 テスト</button>
+            <span style="font-size:10px;color:var(--text-muted);margin-left:2px;" title="複写の使い方：①左メニューでコピー元を開く　②📋複写ボタンを押す">💡 複写＝左メニューで選択→複写ボタン</span>
             <div style="flex:1;"></div>
             <button class="btn btn-ghost" onclick="openMailLogModal()" title="全送信履歴">📬 送信履歴</button>
             <button class="btn btn-ghost" onclick="openPreviewModal()">🖨 PDF出力</button>
