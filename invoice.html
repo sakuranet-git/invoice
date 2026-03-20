@@ -714,6 +714,11 @@
             white-space: nowrap;
         }
         .toggle-grid-btn:hover { border-color: var(--pink); color: var(--text); }
+        /* D&D 並び替え */
+        .cust-card[draggable="true"] { cursor: grab; }
+        .cust-card[draggable="true"]:active { cursor: grabbing; }
+        .cust-card.dragging { opacity: 0.4; transform: scale(0.97); }
+        .cust-card.drag-over { border-color: var(--pink); box-shadow: 0 0 0 2px rgba(233,30,99,0.4); }
         /* 月別ヘッダー（請求書サイドバー内） */
         .month-header {
             font-size: 11px;
@@ -1135,6 +1140,30 @@
     }
 
     // ─────────────────────────────────────────
+    // 顧客カード並び替え（D&D）
+    // ─────────────────────────────────────────
+    const CUSTOMER_ORDER_KEY = 'sakura_customer_order';
+
+    function loadCustomerOrder() {
+        try { return JSON.parse(localStorage.getItem(CUSTOMER_ORDER_KEY)) || []; }
+        catch { return []; }
+    }
+
+    function saveCustomerOrder(names) {
+        localStorage.setItem(CUSTOMER_ORDER_KEY, JSON.stringify(names));
+    }
+
+    function applyCustomerOrder(customers) {
+        const order = loadCustomerOrder();
+        if (order.length === 0) return customers;
+        const map = new Map(customers.map(c => [c.name, c]));
+        const sorted = order.map(n => map.get(n)).filter(Boolean);
+        // 順序に含まれていない顧客（新規追加分）は末尾に追加
+        customers.forEach(c => { if (!order.includes(c.name)) sorted.push(c); });
+        return sorted;
+    }
+
+    // ─────────────────────────────────────────
     // 顧客グリッド：描画
     // ─────────────────────────────────────────
     function renderCustomerGrid(searchTerm = '') {
@@ -1149,6 +1178,8 @@
                 (c.tel1   || '').includes(q) ||
                 (c.tel2   || '').includes(q)
             );
+        } else {
+            customers = applyCustomerOrder(customers);
         }
 
         if (customers.length === 0) {
@@ -1177,6 +1208,46 @@
                 </div>
             </div>`;
         }).join('');
+
+        // D&Dイベントを各カードに登録
+        if (!q) {
+            let dragSrcName = null;
+            grid.querySelectorAll('.cust-card').forEach(card => {
+                card.setAttribute('draggable', 'true');
+
+                card.addEventListener('dragstart', e => {
+                    dragSrcName = card.dataset.name;
+                    card.classList.add('dragging');
+                    e.dataTransfer.effectAllowed = 'move';
+                });
+                card.addEventListener('dragend', () => {
+                    card.classList.remove('dragging');
+                    grid.querySelectorAll('.cust-card').forEach(c => c.classList.remove('drag-over'));
+                });
+                card.addEventListener('dragover', e => {
+                    e.preventDefault();
+                    e.dataTransfer.dropEffect = 'move';
+                    grid.querySelectorAll('.cust-card').forEach(c => c.classList.remove('drag-over'));
+                    card.classList.add('drag-over');
+                });
+                card.addEventListener('drop', e => {
+                    e.preventDefault();
+                    card.classList.remove('drag-over');
+                    if (dragSrcName === card.dataset.name) return;
+
+                    const cards = [...grid.querySelectorAll('.cust-card')];
+                    const names = cards.map(c => c.dataset.name);
+                    const srcIdx  = names.indexOf(dragSrcName);
+                    const destIdx = names.indexOf(card.dataset.name);
+                    if (srcIdx === -1 || destIdx === -1) return;
+
+                    names.splice(srcIdx, 1);
+                    names.splice(destIdx, 0, dragSrcName);
+                    saveCustomerOrder(names);
+                    renderCustomerGrid();
+                });
+            });
+        }
     }
 
     // ─────────────────────────────────────────
