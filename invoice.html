@@ -1315,6 +1315,15 @@
     function renderInvoiceList(list) {
         const container = document.getElementById('invoiceList');
 
+        const paymentColorMap = {
+            '口座振替払い':        '#3b82f6',
+            'クレジットカード払い': '#f59e0b',
+            '請求書払い':          '#a78bfa',
+            '電子決済払い':        '#06b6d4',
+            'QRコード払い':        '#f97316',
+            'その他':              '#6b7280',
+        };
+
         const statusMap = {
             draft:  { label: '下書き',  cls: 'status-draft'  },
             sent:   { label: '送信済み', cls: 'status-sent'   },
@@ -1348,8 +1357,10 @@
                 const cards = byMonth[ym].map(inv => {
                     const s = statusMap[inv.status] || statusMap.draft;
                     const isActive = currentInvoice && currentInvoice.id === inv.id ? 'active' : '';
+                    const pmColor = paymentColorMap[inv.paymentMethod] || '';
+                    const pmStyle = pmColor ? `border-left: 3px solid ${pmColor};` : '';
                     return `
-                    <div class="inv-card ${isActive}" onclick="loadInvoice('${inv.id}')">
+                    <div class="inv-card ${isActive}" style="${pmStyle}" onclick="loadInvoice('${inv.id}')">
                         <div class="inv-card-num">${escHtml(inv.invoiceNumber || '-')}</div>
                         <div class="inv-card-meta">
                             <span>${inv.billingMonth ? inv.billingMonth.replace(/^(\d{4})-(\d{2})$/, '$1年$2月分') : escHtml(inv.invDate || '')}</span>
@@ -1369,8 +1380,10 @@
         container.innerHTML = list.map(inv => {
             const s = statusMap[inv.status] || statusMap.draft;
             const isActive = currentInvoice && currentInvoice.id === inv.id ? 'active' : '';
+            const pmColor = paymentColorMap[inv.paymentMethod] || '';
+            const pmStyle = pmColor ? `border-left: 3px solid ${pmColor};` : '';
             return `
-            <div class="inv-card ${isActive}" onclick="loadInvoice('${inv.id}')">
+            <div class="inv-card ${isActive}" style="${pmStyle}" onclick="loadInvoice('${inv.id}')">
                 <div class="inv-card-num">${escHtml(inv.invoiceNumber || '-')}</div>
                 <div class="inv-card-name">${escHtml(inv.clientName || '（名前なし）')}</div>
                 <div class="inv-card-meta">
