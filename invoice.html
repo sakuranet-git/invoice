@@ -121,7 +121,10 @@
             transition: border-color 0.2s var(--transition);
         }
 
-        .search-input:focus { border-color: var(--pink); }
+        .search-input:focus {
+            border-color: var(--pink);
+            box-shadow: 0 0 0 3px rgba(233,30,99,0.15);
+        }
         .search-input::placeholder { color: var(--text-muted); }
 
         .invoice-list {
@@ -334,7 +337,10 @@
             width: 100%;
         }
 
-        input:focus, select:focus, textarea:focus { border-color: var(--pink); }
+        input:focus, select:focus, textarea:focus {
+            border-color: var(--pink);
+            box-shadow: 0 0 0 3px rgba(233,30,99,0.15);
+        }
         input::placeholder, textarea::placeholder { color: var(--text-muted); }
         textarea { resize: vertical; min-height: 80px; }
 
@@ -377,7 +383,11 @@
             font-size: 13px;
             width: 100%;
         }
-        .item-table input:focus { border-color: var(--pink); background: rgba(0,0,0,0.2); }
+        .item-table input:focus {
+            border-color: var(--pink);
+            background: rgba(0,0,0,0.2);
+            box-shadow: 0 0 0 3px rgba(233,30,99,0.15);
+        }
         .item-table .subtotal-cell { color: #a78bfa; font-weight: 700; font-size: 14px; padding: 6px 12px; }
         .item-table .del-btn { background: none; border: none; cursor: pointer; font-size: 16px; color: var(--danger); padding: 4px 8px; border-radius: 4px; }
         .item-table .del-btn:hover { background: rgba(239,68,68,0.15); }
