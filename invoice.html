@@ -779,6 +779,25 @@
         <div class="sidebar-header">
             <h2>📋 請求書一覧</h2>
             <input type="text" class="search-input" id="searchBox" placeholder="顧客名・番号で検索..." oninput="filterInvoiceList()">
+            <div style="display:flex;gap:4px;margin-top:6px;">
+                <select id="filterYear" onchange="filterInvoiceList()" style="flex:1;font-size:11px;background:var(--glass);border:1px solid var(--glass-border);color:var(--text);border-radius:6px;padding:4px;">
+                    <option value="">年</option>
+                </select>
+                <select id="filterMonth" onchange="filterInvoiceList()" style="flex:1;font-size:11px;background:var(--glass);border:1px solid var(--glass-border);color:var(--text);border-radius:6px;padding:4px;">
+                    <option value="">月</option>
+                    <option value="01">1月</option><option value="02">2月</option><option value="03">3月</option>
+                    <option value="04">4月</option><option value="05">5月</option><option value="06">6月</option>
+                    <option value="07">7月</option><option value="08">8月</option><option value="09">9月</option>
+                    <option value="10">10月</option><option value="11">11月</option><option value="12">12月</option>
+                </select>
+            </div>
+            <div style="display:flex;gap:4px;margin-top:4px;align-items:center;">
+                <input type="number" id="filterAmtMin" placeholder="金額(以上)" min="0" onchange="filterInvoiceList()"
+                       style="flex:1;font-size:11px;background:var(--glass);border:1px solid var(--glass-border);color:var(--text);border-radius:6px;padding:4px;">
+                <span style="color:var(--text-muted);font-size:11px;">〜</span>
+                <input type="number" id="filterAmtMax" placeholder="金額(以下)" min="0" onchange="filterInvoiceList()"
+                       style="flex:1;font-size:11px;background:var(--glass);border:1px solid var(--glass-border);color:var(--text);border-radius:6px;padding:4px;">
+            </div>
         </div>
         <div class="invoice-list" id="invoiceList">
             <p style="text-align:center; color:var(--text-muted); padding:20px; font-size:13px;">
@@ -1113,6 +1132,17 @@
                     ? invoiceCache.filter(inv => inv.clientName === currentCustomerFilter)
                     : invoiceCache;
                 renderInvoiceList(list);
+                // 年セレクトを動的更新
+                const years = [...new Set(invoiceCache
+                    .map(inv => (inv.billingMonth || inv.invDate || '').substring(0, 4))
+                    .filter(y => y.length === 4)
+                )].sort().reverse();
+                const yearSel = document.getElementById('filterYear');
+                if (yearSel) {
+                    const cur = yearSel.value;
+                    yearSel.innerHTML = '<option value="">年</option>' +
+                        years.map(y => `<option value="${y}"${y === cur ? ' selected' : ''}>${y}年</option>`).join('');
+                }
                 setSyncBadge(true);
             }, err => {
                 console.error('Firestore購読エラー:', err);
@@ -1472,16 +1502,25 @@
     // 請求書一覧：検索フィルタ
     // ─────────────────────────────────────────
     function filterInvoiceList() {
-        const q = document.getElementById('searchBox').value.trim().toLowerCase();
+        const q        = (document.getElementById('searchBox').value || '').trim().toLowerCase();
+        const year     = (document.getElementById('filterYear')?.value  || '');
+        const month    = (document.getElementById('filterMonth')?.value || '');
+        const amtMin   = parseFloat(document.getElementById('filterAmtMin')?.value) || 0;
+        const amtMax   = parseFloat(document.getElementById('filterAmtMax')?.value) || Infinity;
+
         let base = currentCustomerFilter
             ? invoiceCache.filter(inv => inv.clientName === currentCustomerFilter)
             : invoiceCache;
-        const filtered = q
-            ? base.filter(inv =>
-                (inv.clientName    || '').toLowerCase().includes(q) ||
-                (inv.invoiceNumber || '').toLowerCase().includes(q))
-            : base;
-        renderInvoiceList(filtered);
+
+        if (q)     base = base.filter(inv =>
+            (inv.clientName    || '').toLowerCase().includes(q) ||
+            (inv.invoiceNumber || '').toLowerCase().includes(q));
+        if (year)  base = base.filter(inv => (inv.billingMonth || inv.invDate || '').startsWith(year));
+        if (month) base = base.filter(inv => (inv.billingMonth || inv.invDate || '').substring(5, 7) === month);
+        if (amtMin > 0)         base = base.filter(inv => (inv.total || 0) >= amtMin);
+        if (amtMax < Infinity)  base = base.filter(inv => (inv.total || 0) <= amtMax);
+
+        renderInvoiceList(base);
     }
 
     // ─────────────────────────────────────────
