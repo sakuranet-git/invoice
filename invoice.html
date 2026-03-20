@@ -829,6 +829,11 @@
                             <option value="confirmed" style="color:#e91e63;">🔒 確定（編集不可）</option>
                         </select>
                     </div>
+                    <div class="form-group full" id="timestampArea" style="font-size:11px;color:var(--text-muted);display:none;padding:4px 0;border-top:1px solid var(--glass-border);margin-top:4px;">
+                        <span id="tsCreated"></span>
+                        <span id="tsUpdated" style="margin-left:16px;"></span>
+                        <span id="tsLocked" style="margin-left:16px;color:#e91e63;"></span>
+                    </div>
                     <div class="form-group">
                         <label>発行日</label>
                         <input type="date" id="invDate">
@@ -1485,6 +1490,8 @@
     function newInvoice() {
         currentInvoice = null;
         clearForm();
+        const tsArea = document.getElementById('timestampArea');
+        if (tsArea) tsArea.style.display = 'none';
         document.getElementById('invNumber').value = generateInvoiceNumber();
         setDefaultDates();
         // 品目を1行空で追加
@@ -1568,6 +1575,7 @@
             renderItems(data.items || []);
             updateTotals();
             applyLockUI(!!(data.locked));
+            showTimestamps(data);
             updateContextBar('edit', data.invoiceNumber);
             renderInvoiceList(invoiceCache); // アクティブ状態更新
 
@@ -1661,6 +1669,24 @@
         if (confirmBtn) confirmBtn.style.display = locked ? 'none' : '';
         const saveBtn = document.querySelector('[onclick="saveInvoice()"]');
         if (saveBtn) saveBtn.disabled = locked;
+    }
+
+    function formatTs(ts) {
+        if (!ts) return '';
+        const d = ts.toDate ? ts.toDate() : new Date(ts);
+        return d.toLocaleDateString('ja-JP') + ' ' + d.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' });
+    }
+
+    function showTimestamps(data) {
+        const area = document.getElementById('timestampArea');
+        if (!area) return;
+        const created  = data.createdAt  ? '作成: ' + formatTs(data.createdAt)  : '';
+        const updated  = data.updatedAt  ? '更新: ' + formatTs(data.updatedAt)  : '';
+        const locked   = data.lockedAt   ? '🔒 確定: ' + formatTs(data.lockedAt) : '';
+        document.getElementById('tsCreated').textContent  = created;
+        document.getElementById('tsUpdated').textContent  = updated;
+        document.getElementById('tsLocked').textContent   = locked;
+        area.style.display = (created || updated || locked) ? '' : 'none';
     }
 
     // ─────────────────────────────────────────
