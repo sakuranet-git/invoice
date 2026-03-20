@@ -1916,13 +1916,12 @@
         const tbody = document.getElementById('itemsBody');
         const tr = document.createElement('tr');
         tr.dataset.type = 'header';
-        tr.style.cssText = 'background:#fff;';
         tr.innerHTML = `
             <td class="row-drag-handle" title="ドラッグで並び替え">⠿</td>
-            <td colspan="6" style="border-left:3px solid rgba(124,58,237,0.4); padding:6px 8px;">
+            <td colspan="6">
                 <input type="text" class="item-header-text" value="${escHtml(text)}"
                     placeholder="例：【初期費用】"
-                    style="width:100%; font-weight:700; font-size:13px; background:transparent; border:none; outline:none; color:#333;">
+                    style="width:100%; font-weight:700; font-size:13px; background:transparent; border:none; outline:none;">
             </td>
             <td><button class="del-btn" onclick="removeItem(this)" title="削除">✕</button></td>
         `;
