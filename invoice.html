@@ -145,7 +145,12 @@
             transition: all 0.2s var(--transition);
         }
 
-        .inv-card:hover { border-color: var(--glass-border); background: rgba(255,255,255,0.08); }
+        .inv-card:hover {
+            border-color: var(--glass-border);
+            background: rgba(255,255,255,0.08);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 16px rgba(233,30,99,0.15);
+        }
         .inv-card.active { border-color: var(--pink); background: var(--pink-light); }
 
         .inv-card-num  { font-size: 11px; color: var(--text-muted); margin-bottom: 3px; }
