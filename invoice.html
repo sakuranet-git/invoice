@@ -18,6 +18,7 @@
     <script src="config.js"></script>
 
     <style>
+        * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
         /* ===== CSS変数 / SAKURAデザインシステム ===== */
         :root {
             --pink:         #e91e63;
@@ -483,14 +484,13 @@
 
         /* ===== A4プレビュー + PDF印刷専用スタイル ===== */
         @media print {
-            body > *:not(#printArea) { display: none !important; }
-            #printArea {
-                display: block !important;
-                position: fixed;
-                inset: 0;
-                z-index: 99999;
-                background: #fff;
-            }
+            @page { size: A4; margin: 0; }
+            body { background: white !important; }
+            body > *:not(#previewModal) { display: none !important; }
+            #previewModal { background: white !important; padding: 0 !important; display: block !important; }
+            #previewModal > div > div:first-child { display: none !important; }
+            #a4Canvas { box-shadow: none !important; margin: 0 !important; }
+            .pi-page { width: 210mm !important; height: 297mm !important; page-break-after: always; break-after: always; }
         }
 
         #printArea {
@@ -502,12 +502,13 @@
             font-family: 'Noto Sans JP', sans-serif;
             color: #111;
             background: #fff;
-            width: 794px;
-            min-height: 1123px;
+            width: 210mm;
+            height: 297mm;
             font-size: 12px;
-            line-height: 1.6;
+            line-height: 1.5;
             position: relative;
             box-sizing: border-box;
+            overflow: hidden;
             padding: 0;
         }
 
@@ -520,7 +521,7 @@
 
         /* ---- コンテンツラッパー ---- */
         .pi-content {
-            padding: 28px 56px 48px;
+            padding: 20px 40px 24px;
         }
 
         /* ---- ヘッダー行 ---- */
@@ -605,7 +606,7 @@
         }
         .pi-table td {
             border: 1px solid #ede8f5;
-            padding: 7px 8px;
+            padding: 5px 6px;
             vertical-align: middle;
         }
         .pi-table tbody tr:nth-child(even) td { background: rgba(233,30,99,0.03); }
@@ -1069,7 +1070,7 @@
             </div>
         </div>
         <!-- A4キャンバス -->
-        <div id="a4Canvas" style="width:794px; min-height:1123px; background:#fff; margin:0 auto; position:relative; box-shadow:0 4px 24px rgba(0,0,0,0.5);">
+        <div id="a4Canvas" style="width:210mm; height:297mm; background:#fff; margin:0 auto; position:relative; box-shadow:0 10px 30px rgba(0,0,0,0.5); overflow:hidden;">
             <div id="a4Content"></div>
             <!-- 自社情報（ドラッグ可能） -->
             <div id="ourSideBox"
@@ -2119,25 +2120,21 @@
         const clientAddr = addrM ? addrM[2].trim() : (data.clientAddress || '');
         const rows = data.items.map(it => {
             if (it.type === 'header') {
-                return `<tr style="background:rgba(124,58,237,0.06);">
-                    <td colspan="6" style="font-weight:700;color:#333;font-size:12px;border-left:3px solid rgba(124,58,237,0.4);">${escHtml(it.name)}</td>
+                return `<tr>
+                    <td colspan="6" style="font-weight:normal; color:#555; font-style:italic;">${escHtml(it.name)}</td>
                 </tr>`;
             }
-            const nameLen = (it.name || '').length;
-            const noteLen = (it.note || '').length;
-            const nameFz  = nameLen > 40 ? '11px' : nameLen > 24 ? '13px' : '15px';
-            const noteFz  = noteLen > 35 ? '7px' : noteLen > 20 ? '8px' : '9px';
             return `<tr>
-                <td style="font-size:${nameFz}; word-break:break-all;">${escHtml(it.name)}</td>
+                <td style="word-break:break-all;">${escHtml(it.name)}</td>
                 <td class="pi-td-r">${it.qty}</td>
                 <td class="pi-td-c">${escHtml(it.unit)}</td>
                 <td class="pi-td-r">¥${formatNum(it.price)}</td>
                 <td class="pi-td-r">¥${formatNum(it.qty * it.price)}</td>
-                <td style="font-size:${noteFz};color:#555; word-break:break-all;">${escHtml(it.note || '')}</td>
+                <td style="color:#555; word-break:break-all;">${escHtml(it.note || '')}</td>
             </tr>`;
         }).join('');
 
-        const emptyRows = Math.max(0, 20 - data.items.length);
+        const emptyRows = Math.max(0, 12 - data.items.length);
         const blankRows = Array(emptyRows).fill('<tr><td>&nbsp;</td><td></td><td></td><td></td><td></td><td></td></tr>').join('');
 
         return `
@@ -2174,12 +2171,12 @@
                 <table class="pi-table">
                     <thead>
                         <tr>
-                            <th style="width:30%;">商品コード／商品名</th>
+                            <th style="width:40%;">商品コード／商品名</th>
                             <th style="width:7%;">数量</th>
                             <th style="width:7%;">単位</th>
                             <th style="width:13%;">単価</th>
                             <th style="width:13%;">金額</th>
-                            <th style="width:30%;">備考</th>
+                            <th style="width:20%;">備考</th>
                         </tr>
                     </thead>
                     <tbody>${rows}${blankRows}</tbody>
@@ -2402,12 +2399,10 @@
     // ─────────────────────────────────────────
     async function generatePdfBase64() {
         const data = collectFormData();
-        const bm = getBillingMonthValue().replace('-','');  // "202603"
+        const bm = getBillingMonthValue().replace('-','');
         const filename = `請求書_${bm}_${data.invoiceNumber}.pdf`;
 
-        // a4Canvasをターゲットにする（印鑑の絶対配置を含む）
         const element = document.getElementById('a4Canvas');
-
         const opt = {
             margin:      [0, 0, 0, 0],
             filename:    filename,
@@ -2415,10 +2410,7 @@
             html2canvas: { scale: 2, useCORS: true, backgroundColor: '#fff' },
             jsPDF:       { unit: 'px', format: [794, 1123], orientation: 'portrait' }
         };
-
-        // base64文字列として取得
         const pdf = await html2pdf().set(opt).from(element).outputPdf('datauristring');
-        // "data:application/pdf;base64,XXXX..." → "XXXX..." 部分だけ
         return { base64: pdf.split(',')[1], filename };
     }
 
