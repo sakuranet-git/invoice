@@ -2339,8 +2339,8 @@
         function onMove(ev) {
             let x = ev.clientX - startX;
             let y = ev.clientY - startY;
-            x = Math.max(0, Math.min(x, 794 - el.offsetWidth));
-            y = Math.max(0, Math.min(y, canvas.offsetHeight - el.offsetHeight));
+            x = Math.max(-el.offsetWidth + 20, Math.min(x, 794 - 20));
+            y = Math.max(0, Math.min(y, canvas.offsetHeight - 20));
             el.style.left = x + 'px';
             el.style.top  = y + 'px';
         }
