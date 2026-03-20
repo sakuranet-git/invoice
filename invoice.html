@@ -392,6 +392,10 @@
         .item-table .subtotal-cell { color: #a78bfa; font-weight: 700; font-size: 14px; padding: 6px 12px; }
         .item-table .del-btn { background: none; border: none; cursor: pointer; font-size: 16px; color: var(--danger); padding: 4px 8px; border-radius: 4px; }
         .item-table .del-btn:hover { background: rgba(239,68,68,0.15); }
+        .row-drag-handle { cursor: grab; text-align: center; color: #bbb; font-size: 14px; user-select: none; padding: 0 4px; }
+        .row-drag-handle:hover { color: #7c3aed; }
+        #itemsBody tr.row-dragging { opacity: 0.4; }
+        #itemsBody tr.row-drag-over td { border-top: 2px solid rgba(124,58,237,0.7); }
 
         /* 合計行 */
         .totals-section {
@@ -943,12 +947,13 @@
                     <table class="item-table">
                         <thead>
                             <tr>
-                                <th style="width:30%;">品名・内容</th>
+                                <th style="width:20px;"></th>
+                                <th style="width:29%;">品名・内容</th>
                                 <th style="width:8%;">数量</th>
                                 <th style="width:8%;">単位</th>
-                                <th style="width:14%;">単価（円）</th>
-                                <th style="width:14%;">小計（円）</th>
-                                <th style="width:22%;">備考</th>
+                                <th style="width:13%;">単価（円）</th>
+                                <th style="width:13%;">小計（円）</th>
+                                <th style="width:21%;">備考</th>
                                 <th style="width:4%;"></th>
                             </tr>
                         </thead>
@@ -1892,6 +1897,7 @@
         const tr = document.createElement('tr');
         tr.dataset.type = 'item';
         tr.innerHTML = `
+            <td class="row-drag-handle" title="ドラッグで並び替え">⠿</td>
             <td><input type="text"   class="item-name"  value="${escHtml(name)}"  placeholder="例：出張サポート費" oninput="updateTotals()"></td>
             <td><input type="number" class="item-qty"   value="${qty}"  min="1"    style="width:60px;"  onchange="updateTotals()"></td>
             <td><input type="text"   class="item-unit"  value="${escHtml(unit)}"   placeholder="式"     style="width:50px;"></td>
@@ -1901,6 +1907,7 @@
             <td><button class="del-btn" onclick="removeItem(this)" title="削除">✕</button></td>
         `;
         tbody.appendChild(tr);
+        initRowDrag(tr);
         updateTotals();
     }
 
@@ -1911,6 +1918,7 @@
         tr.dataset.type = 'header';
         tr.style.cssText = 'background:rgba(124,58,237,0.06);';
         tr.innerHTML = `
+            <td class="row-drag-handle" title="ドラッグで並び替え">⠿</td>
             <td colspan="6" style="border-left:3px solid rgba(124,58,237,0.4); padding:6px 8px;">
                 <input type="text" class="item-header-text" value="${escHtml(text)}"
                     placeholder="例：【初期費用】"
@@ -1919,12 +1927,58 @@
             <td><button class="del-btn" onclick="removeItem(this)" title="削除">✕</button></td>
         `;
         tbody.appendChild(tr);
+        initRowDrag(tr);
     }
 
     /** 品目行を削除 */
     function removeItem(btn) {
         btn.closest('tr').remove();
         updateTotals();
+    }
+
+    /** 行ドラッグ＆ドロップ並び替え */
+    let _dragSrc = null;
+    function initRowDrag(tr) {
+        tr.draggable = true;
+
+        tr.querySelector('.row-drag-handle').addEventListener('mousedown', () => {
+            tr.draggable = true;
+        });
+        // 入力中はドラッグ開始しないよう一時無効化
+        tr.querySelectorAll('input').forEach(inp => {
+            inp.addEventListener('mousedown', e => { tr.draggable = false; });
+            inp.addEventListener('blur',      () => { tr.draggable = true;  });
+        });
+
+        tr.addEventListener('dragstart', e => {
+            _dragSrc = tr;
+            tr.classList.add('row-dragging');
+            e.dataTransfer.effectAllowed = 'move';
+        });
+        tr.addEventListener('dragend', () => {
+            tr.classList.remove('row-dragging');
+            document.querySelectorAll('#itemsBody tr').forEach(r => r.classList.remove('row-drag-over'));
+            _dragSrc = null;
+        });
+        tr.addEventListener('dragover', e => {
+            e.preventDefault();
+            if (_dragSrc && _dragSrc !== tr) {
+                document.querySelectorAll('#itemsBody tr').forEach(r => r.classList.remove('row-drag-over'));
+                tr.classList.add('row-drag-over');
+            }
+        });
+        tr.addEventListener('drop', e => {
+            e.preventDefault();
+            if (_dragSrc && _dragSrc !== tr) {
+                const tbody = tr.closest('tbody');
+                const rows  = [...tbody.rows];
+                const si = rows.indexOf(_dragSrc);
+                const ti = rows.indexOf(tr);
+                if (si < ti) tbody.insertBefore(_dragSrc, tr.nextSibling);
+                else         tbody.insertBefore(_dragSrc, tr);
+                updateTotals();
+            }
+        });
     }
 
     /** 品目を配列から描画 */
