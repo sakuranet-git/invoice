@@ -6,7 +6,7 @@
     <title>🧾 SAKURA 請求書システム</title>
     <meta name="description" content="株式会社さくらねっと 請求書作成・発行・送信システム">
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&family=Noto+Sans+JP:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&family=Noto+Sans+JP:wght@400;700&family=Noto+Serif+JP:wght@400;600;700&family=Cormorant+Garamond:wght@400;600;700&display=swap" rel="stylesheet">
 
     <!-- html2pdf.js: ブラウザでA4 PDF生成 -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
@@ -476,13 +476,13 @@
 
         /* A4共通スタイル（プレビュー・PDF生成・印刷で共用） */
         .pi-page {
-            font-family: 'Noto Sans JP', 'Hiragino Kaku Gothic ProN', sans-serif;
+            font-family: 'Noto Serif JP', 'Hiragino Mincho ProN', 'Yu Mincho', serif;
             color: #111;
             background: #fff;
             width: 794px;
             min-height: 1123px;
             font-size: 12px;
-            line-height: 1.5;
+            line-height: 1.6;
             position: relative;
             box-sizing: border-box;
             padding: 0;
@@ -518,10 +518,10 @@
             flex-shrink: 0;
         }
         .pi-title-box {
-            font-family: 'Outfit', sans-serif;
-            font-size: 26px;
-            font-weight: 900;
-            letter-spacing: 8px;
+            font-family: 'Cormorant Garamond', 'Noto Serif JP', serif;
+            font-size: 30px;
+            font-weight: 700;
+            letter-spacing: 12px;
             background: linear-gradient(135deg, #e91e63, #7c3aed);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
@@ -541,19 +541,21 @@
         }
         .pi-customer { flex: 1; font-size: 12px; line-height: 2; }
         .pi-cust-name {
-            font-size: 20px; font-weight: 900; color: #111;
+            font-family: 'Noto Serif JP', serif;
+            font-size: 20px; font-weight: 700; color: #111;
             border-bottom: 2px solid #e91e63;
             display: inline-block;
             padding-bottom: 2px;
             margin-bottom: 4px;
+            letter-spacing: 2px;
         }
         .pi-our-side {
             width: 260px;
             font-size: 11px;
-            line-height: 1.9;
+            line-height: 2;
             color: #444;
         }
-        .pi-our-name { font-size: 14px; font-weight: 900; color: #111; }
+        .pi-our-name { font-family: 'Noto Serif JP', serif; font-size: 14px; font-weight: 700; color: #111; letter-spacing: 1px; }
         .pi-our-reg {
             font-size: 10px; color: #e91e63; margin-top: 6px;
             display: inline-block;
@@ -585,8 +587,9 @@
             vertical-align: middle;
         }
         .pi-table tbody tr:nth-child(even) td { background: rgba(233,30,99,0.03); }
-        .pi-td-r { text-align: right; }
+        .pi-td-r { text-align: right; font-family: 'Outfit', sans-serif; font-variant-numeric: tabular-nums; }
         .pi-td-c { text-align: center; }
+        .pi-fc-val { font-family: 'Outfit', sans-serif; font-variant-numeric: tabular-nums; }
 
         /* ---- フッター合計行 ---- */
         .pi-footer-row {
