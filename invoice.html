@@ -1617,12 +1617,15 @@
         if (!confirm('請求書を確定しますか？\n確定後は編集・削除できなくなります（電子帳簿保存法）。')) return;
 
         try {
-            await db.collection('invoices').doc(currentInvoice.id).update({
-                status:    'confirmed',
-                locked:    true,
-                lockedAt:  firebase.firestore.FieldValue.serverTimestamp(),
+            const batch = db.batch();
+            const invRef = db.collection('invoices').doc(currentInvoice.id);
+            const logRef = db.collection('audit_log').doc(); // 新規doc
+            batch.update(invRef, {
+                status:   'confirmed',
+                locked:   true,
+                lockedAt: firebase.firestore.FieldValue.serverTimestamp(),
             });
-            await db.collection('audit_log').add({
+            batch.set(logRef, {
                 invoiceId:     currentInvoice.id,
                 invoiceNumber: currentInvoice.invoiceNumber || '',
                 action:        'confirm',
@@ -1630,8 +1633,10 @@
                 total:         currentInvoice.total || 0,
                 timestamp:     firebase.firestore.FieldValue.serverTimestamp(),
             });
+            await batch.commit();
             currentInvoice.locked = true;
             currentInvoice.status = 'confirmed';
+            currentInvoice.lockedAt = { toDate: () => new Date() }; // ローカルタイムスタンプ（表示用）
             applyLockUI(true);
             showToast('🔒 確定しました（電子帳簿保存法対応）');
         } catch (e) {
@@ -1650,7 +1655,8 @@
         document.querySelectorAll('#itemsBody button').forEach(el => el.disabled = locked);
         const addBtn = document.getElementById('addItemBtn');
         if (addBtn) addBtn.disabled = locked;
-        document.getElementById('confirmBtn').style.display = locked ? 'none' : '';
+        const confirmBtn = document.getElementById('confirmBtn');
+        if (confirmBtn) confirmBtn.style.display = locked ? 'none' : '';
         const saveBtn = document.querySelector('[onclick="saveInvoice()"]');
         if (saveBtn) saveBtn.disabled = locked;
     }
@@ -1660,8 +1666,9 @@
     // ─────────────────────────────────────────
     async function deleteInvoice(id, event) {
         event.stopPropagation();
-        if (currentInvoice && currentInvoice.id === id && currentInvoice.locked) {
-            showToast('🔒 確定済みの請求書は削除できません');
+        const targetForLockCheck = invoiceCache.find(inv => inv.id === id);
+        if (targetForLockCheck && targetForLockCheck.locked) {
+            showToast('🔒 確定済みの請求書は削除できません（電子帳簿保存法）');
             return;
         }
         if (!confirm('この請求書を削除しますか？\n（この操作は取り消せません）')) return;
