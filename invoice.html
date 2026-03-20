@@ -841,8 +841,8 @@
         <div class="toolbar">
             <button class="btn btn-ghost" id="backBtn" onclick="backToCustomers()" style="display:none;">← 顧客一覧</button>
             <button class="btn btn-primary" onclick="newInvoice()">＋ 新規作成</button>
-            <button class="btn btn-ghost" id="copyBtn" onclick="copyInvoice()" title="表示中の請求書をコピーします">📋 コピー</button>
-            <button class="btn btn-ghost" id="pasteBtn" onclick="pasteInvoice()" title="コピーした内容を新規下書きに貼り付けます" style="display:none;color:#10b981;border-color:rgba(16,185,129,0.4);">📋 ペースト</button>
+            <button class="btn btn-ghost" id="copyBtn" onclick="copyInvoice()" title="①左メニューで元の請求書を開いてこのボタンを押す">①複写元を選択</button>
+            <button class="btn btn-ghost" id="pasteBtn" onclick="pasteInvoice()" title="選択した請求書の顧客・品目を引き継いで新規作成します" style="display:none;color:#10b981;border-color:rgba(16,185,129,0.4);">②新規作成（複写）</button>
             <button class="btn btn-ghost" onclick="saveInvoice()">💾 保存</button>
             <button class="btn btn-ghost" id="confirmBtn" onclick="confirmInvoice()" style="color:#e91e63;border-color:rgba(233,30,99,0.4);" title="確定すると編集・削除できなくなります">🔒 確定</button>
             <button class="btn btn-ghost" id="testModeBtn" onclick="toggleTestMode()" title="テストモード：確定済みでも編集・削除可能" style="color:#f59e0b;border-color:rgba(245,158,11,0.4);font-size:11px;">🧪 テスト</button>
