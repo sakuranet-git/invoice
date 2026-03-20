@@ -494,7 +494,7 @@
 
         /* A4共通スタイル（プレビュー・PDF生成・印刷で共用） */
         .pi-page {
-            font-family: 'Noto Serif JP', 'Hiragino Mincho ProN', 'Yu Mincho', serif;
+            font-family: 'Noto Sans JP', sans-serif;
             color: #111;
             background: #fff;
             width: 794px;
@@ -508,14 +508,14 @@
 
         /* ---- トップグラデーションバー ---- */
         .pi-header-bar {
-            height: 8px;
-            background: linear-gradient(135deg, #e91e63, #7c3aed);
+            height: 6px;
+            background: linear-gradient(90deg, rgba(233,30,99,0.85), rgba(124,58,237,0.85));
             width: 100%;
         }
 
         /* ---- コンテンツラッパー ---- */
         .pi-content {
-            padding: 20px 56px 40px;
+            padding: 28px 56px 48px;
         }
 
         /* ---- ヘッダー行 ---- */
@@ -536,11 +536,11 @@
             flex-shrink: 0;
         }
         .pi-title-box {
-            font-family: 'Cormorant Garamond', 'Noto Serif JP', serif;
-            font-size: 30px;
+            font-family: 'Outfit', 'Noto Sans JP', sans-serif;
+            font-size: 28px;
             font-weight: 700;
-            letter-spacing: 12px;
-            background: linear-gradient(135deg, #e91e63, #7c3aed);
+            letter-spacing: 14px;
+            background: linear-gradient(90deg, #e91e63, #7c3aed);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
@@ -552,16 +552,15 @@
         .pi-info-section {
             display: flex;
             gap: 16px;
-            margin-bottom: 14px;
-            padding-bottom: 14px;
-            border-bottom: 2px solid;
-            border-image: linear-gradient(135deg, #e91e63, #7c3aed) 1;
+            margin-bottom: 18px;
+            padding-bottom: 18px;
+            border-bottom: 1px solid rgba(233,30,99,0.25);
         }
         .pi-customer { flex: 1; font-size: 12px; line-height: 2; }
         .pi-cust-name {
-            font-family: 'Noto Serif JP', serif;
+            font-family: 'Noto Sans JP', sans-serif;
             font-size: 20px; font-weight: 700; color: #111;
-            border-bottom: 2px solid #e91e63;
+            border-bottom: 1px solid rgba(233,30,99,0.45);
             display: inline-block;
             padding-bottom: 2px;
             margin-bottom: 4px;
@@ -573,7 +572,7 @@
             line-height: 2;
             color: #444;
         }
-        .pi-our-name { font-family: 'Noto Serif JP', serif; font-size: 14px; font-weight: 700; color: #111; letter-spacing: 1px; }
+        .pi-our-name { font-family: 'Noto Sans JP', sans-serif; font-size: 14px; font-weight: 700; color: #111; letter-spacing: 1px; }
         .pi-our-reg {
             font-size: 10px; color: #e91e63; margin-top: 6px;
             display: inline-block;
@@ -590,18 +589,18 @@
             border: 1px solid #e0d0f0;
         }
         .pi-table th {
-            background: linear-gradient(135deg, #e91e63, #7c3aed);
+            background: linear-gradient(90deg, rgba(233,30,99,0.85), rgba(124,58,237,0.85));
             color: #fff;
             border: 1px solid rgba(255,255,255,0.15);
-            padding: 7px 6px;
+            padding: 8px 8px;
             text-align: center;
             font-weight: 700;
             font-size: 11px;
             white-space: nowrap;
         }
         .pi-table td {
-            border: 1px solid #e0d0f0;
-            padding: 4px 6px;
+            border: 1px solid #ede8f5;
+            padding: 7px 8px;
             vertical-align: middle;
         }
         .pi-table tbody tr:nth-child(even) td { background: rgba(233,30,99,0.03); }
