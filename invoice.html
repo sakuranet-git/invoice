@@ -2278,14 +2278,14 @@
         const clientName = data.clientName || 'お客様';
 
         document.getElementById('mailTo2').value      = data.clientEmail || '';
-        document.getElementById('mailSubject2').value = `【さくらねっと】${bm} 請求書のご案内（${data.invoiceNumber}）`;
+        document.getElementById('mailSubject2').value = `【株式会社さくらねっと】${bm}請求書のご案内（${data.invoiceNumber}）`;
         document.getElementById('mailBody2').value    =
 `${clientName} 御中
 
 いつも大変お世話になっております。
 株式会社さくらねっとでございます。
 
-${bm}分の請求書をPDFにてお送りいたします。
+${bm}の請求書をPDFにてお送りいたします。
 ご確認のほどよろしくお願いいたします。
 
 【請求書番号】${data.invoiceNumber}
@@ -2294,6 +2294,11 @@ ${bm}分の請求書をPDFにてお送りいたします。
 【ご請求金額（税込）】¥${formatNum(data.total)}
 
 ご不明な点がございましたら、お気軽にお問い合わせください。
+
+クレジットカードは毎月15日
+口座振替は毎月22日
+（土日祝は翌営業日の決済になります）
+クレジットカード決済はStripe社からも明細が届きますが、弊社の請求書を必ず採用してください。
 
 ─────────────────────────────
 株式会社さくらねっと
