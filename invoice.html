@@ -841,11 +841,11 @@
         <div class="toolbar">
             <button class="btn btn-ghost" id="backBtn" onclick="backToCustomers()" style="display:none;">← 顧客一覧</button>
             <button class="btn btn-primary" onclick="newInvoice()">＋ 新規作成</button>
-            <button class="btn btn-ghost" onclick="duplicateInvoice()" title="①左メニューでコピー元の請求書を開く　②このボタンを押す　→ 顧客・品目を引き継いだ新規下書きが作成されます">📋 複写（前回コピー）</button>
+            <button class="btn btn-ghost" id="copyBtn" onclick="copyInvoice()" title="表示中の請求書をコピーします">📋 コピー</button>
+            <button class="btn btn-ghost" id="pasteBtn" onclick="pasteInvoice()" title="コピーした内容を新規下書きに貼り付けます" style="display:none;color:#10b981;border-color:rgba(16,185,129,0.4);">📋 ペースト</button>
             <button class="btn btn-ghost" onclick="saveInvoice()">💾 保存</button>
             <button class="btn btn-ghost" id="confirmBtn" onclick="confirmInvoice()" style="color:#e91e63;border-color:rgba(233,30,99,0.4);" title="確定すると編集・削除できなくなります">🔒 確定</button>
             <button class="btn btn-ghost" id="testModeBtn" onclick="toggleTestMode()" title="テストモード：確定済みでも編集・削除可能" style="color:#f59e0b;border-color:rgba(245,158,11,0.4);font-size:11px;">🧪 テスト</button>
-            <span style="font-size:10px;color:var(--text-muted);margin-left:2px;" title="複写の使い方：①左メニューでコピー元を開く　②📋複写ボタンを押す">💡 複写＝左メニューで選択→複写ボタン</span>
             <div style="flex:1;"></div>
             <button class="btn btn-ghost" onclick="openMailLogModal()" title="全送信履歴">📬 送信履歴</button>
             <button class="btn btn-ghost" onclick="openPreviewModal()">🖨 PDF出力</button>
@@ -1602,29 +1602,41 @@
     }
 
     // ─────────────────────────────────────────
-    // 複写（弥生の「複写」と同等の機能）
+    // コピー＆ペースト（2ステップ複写）
     // ─────────────────────────────────────────
-    function duplicateInvoice() {
+    let copiedInvoice = null;
+
+    function copyInvoice() {
         if (!currentInvoice) {
-            showToast('⚠ 複写する請求書を一覧から選択してください');
+            showToast('⚠ 左メニューからコピー元の請求書を選択してください');
             return;
         }
+        copiedInvoice = { ...currentInvoice, items: JSON.parse(JSON.stringify(currentInvoice.items || [])) };
+        const pasteBtn = document.getElementById('pasteBtn');
+        if (pasteBtn) pasteBtn.style.display = '';
+        showToast(`📋 コピーしました：${copiedInvoice.clientName || ''} ${copiedInvoice.invoiceNumber || ''}　→ ペーストボタンで新規作成`);
+    }
 
-        const src = { ...currentInvoice };
+    function pasteInvoice() {
+        if (!copiedInvoice) {
+            showToast('⚠ 先にコピーボタンを押してください');
+            return;
+        }
+        const src = copiedInvoice;
         currentInvoice = null;
 
         // 番号・日付だけ新規に
-        document.getElementById('invNumber').value   = generateInvoiceNumber();
-        document.getElementById('invStatus').value   = 'draft';
+        document.getElementById('invNumber').value = generateInvoiceNumber();
+        document.getElementById('invStatus').value = 'draft';
         setDefaultDates();
 
         // 顧客・品目はそのまま引き継ぎ
         document.getElementById('clientName').value    = src.clientName    || '';
         document.getElementById('clientContact').value = src.clientContact || '';
         document.getElementById('clientEmail').value   = src.clientEmail   || '';
-        document.getElementById('clientAddress').value = src.clientAddress  || '';
-        document.getElementById('paymentMethod').value = src.paymentMethod  || '';
-        document.getElementById('invNote').value       = src.note           || '';
+        document.getElementById('clientAddress').value = src.clientAddress || '';
+        document.getElementById('paymentMethod').value = src.paymentMethod || '';
+        document.getElementById('invNote').value       = src.note          || '';
 
         // 品目の復元
         renderItems(src.items || []);
@@ -1633,8 +1645,11 @@
         applyLockUI(false);
         const tsArea = document.getElementById('timestampArea');
         if (tsArea) tsArea.style.display = 'none';
+        const mlSection = document.getElementById('mailLogSection');
+        if (mlSection) mlSection.style.display = 'none';
+        updateContextBar('new');
 
-        showToast('📋 請求書を複写しました。内容を確認・編集してください。');
+        showToast('📋 ペーストしました。内容を確認・編集して保存してください。');
     }
 
     // ─────────────────────────────────────────
