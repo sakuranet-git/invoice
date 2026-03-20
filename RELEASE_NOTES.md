@@ -1,12 +1,20 @@
 # RELEASE NOTES — SAKURA 請求書システム
 
+## v1.2.4 — 2026-03-21
+
+### v1.2.2/v1.2.3の印刷CSS変更をリバート
+
+- `@page { margin: 25mm }` → `@page { margin: 0 }` に戻す
+- `a4Canvas`・`pi-page` を v1.2.1 状態（`width:210mm` / `height:297mm`）に戻す
+- v1.2.2/v1.2.3の変更でレイアウトが崩れたため全リバート
+
+---
+
 ## v1.2.3 — 2026-03-21
 
-### 印刷時レイアウト崩れ修正
+### 印刷時レイアウト崩れ修正（→ v1.2.4でリバート）
 
 - `@media print` で `#a4Canvas` を `width: 100%` / `height: auto` / `overflow: visible` に上書き
-- `@page { margin: 25mm }` の印刷可能幅（160mm）に合わせて `a4Canvas` が縮小されていた問題を解消
-- `.pi-page` にも `overflow: visible` を追加
 
 ---
 
