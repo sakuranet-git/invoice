@@ -1796,6 +1796,9 @@
     // ─────────────────────────────────────────
     function buildInvoiceHTML(data) {
         const billingLabel = getBillingMonthLabel();
+        const addrM = (data.clientAddress || '').match(/^(〒[\d-]+)\s*([\s\S]*)$/);
+        const clientZip  = addrM ? addrM[1] : '';
+        const clientAddr = addrM ? addrM[2].trim() : (data.clientAddress || '');
         const rows = data.items.map(it => `
             <tr>
                 <td>${escHtml(it.name)}</td>
@@ -1834,7 +1837,8 @@
                             <div class="pi-cust-name">${escHtml(data.clientName || '　')}</div>
                             <div style="font-size:13px;">御中</div>
                         </div>
-                        ${data.clientAddress ? `<div style="font-size:11px;color:#666;">${escHtml(data.clientAddress)}</div>` : ''}
+                        ${clientZip  ? `<div style="font-size:11px;color:#888;margin-top:8px;">${escHtml(clientZip)}</div>` : ''}
+                        ${clientAddr ? `<div style="font-size:11px;color:#666;">${escHtml(clientAddr)}</div>` : ''}
                         ${data.clientContact ? `<div style="font-size:11px;color:#555;">TEL &nbsp;${escHtml(data.clientContact)}</div>` : ''}
                     </div>
                     <div class="pi-our-side">
