@@ -2134,7 +2134,8 @@
             </tr>`;
         }).join('');
 
-        const emptyRows = Math.max(0, 12 - data.items.length);
+        const topBlankRows = Array(3).fill('<tr><td>&nbsp;</td><td></td><td></td><td></td><td></td><td></td></tr>').join('');
+        const emptyRows = Math.max(0, 20 - data.items.length);
         const blankRows = Array(emptyRows).fill('<tr><td>&nbsp;</td><td></td><td></td><td></td><td></td><td></td></tr>').join('');
 
         return `
@@ -2149,8 +2150,10 @@
                             <div class="pi-title-box">請　求　書</div>
                         </div>
                     </div>
-                    <div class="pi-head-right">
-                        <div class="pi-billing-month">${escHtml(billingLabel)}</div>
+                    <div class="pi-head-right" id="piHeadRight"
+                         style="position:absolute; cursor:move; user-select:none; right:32px; top:22px;"
+                         title="ドラッグで位置を変更できます"
+                         onmousedown="startPiHeadDrag(event)">
                         <div>発行日&emsp;<strong>${escHtml(data.invDate)}</strong></div>
                         <div>No.&emsp;<strong>${escHtml(data.invoiceNumber)}</strong></div>
                     </div>
@@ -2179,7 +2182,7 @@
                             <th style="width:20%;">備考</th>
                         </tr>
                     </thead>
-                    <tbody>${rows}${blankRows}</tbody>
+                    <tbody>${topBlankRows}${rows}${blankRows}</tbody>
                 </table>
                 <div class="pi-footer-row">
                     <div class="pi-fc"><span class="pi-fc-lbl">10%対象税抜額</span><span class="pi-fc-val">¥${formatNum(data.subtotal)}</span></div>
@@ -2224,6 +2227,16 @@
         const ourPos = JSON.parse(localStorage.getItem('ourSidePos') || 'null') || { x: 430, y: 130 };
         ourSideBox.style.left = ourPos.x + 'px';
         ourSideBox.style.top  = ourPos.y + 'px';
+        // 発行日・No.エリア（ドラッグ可能）
+        const piHead = document.getElementById('piHeadRight');
+        if (piHead) {
+            const phPos = JSON.parse(localStorage.getItem('piHeadPos') || 'null');
+            if (phPos) {
+                piHead.style.left  = phPos.x + 'px';
+                piHead.style.top   = phPos.y + 'px';
+                piHead.style.right = 'auto';
+            }
+        }
         document.getElementById('previewModal').style.display = 'block';
     }
 
@@ -2323,6 +2336,41 @@
     // ─────────────────────────────────────────
     // 自社情報ドラッグ機能
     // ─────────────────────────────────────────
+    function startPiHeadDrag(e) {
+        e.preventDefault();
+        const el = document.getElementById('piHeadRight');
+        if (!el) return;
+        const page = el.closest('.pi-page');
+        // right→left切り替え
+        if (!el.style.left || el.style.left === 'auto') {
+            el.style.left  = el.offsetLeft + 'px';
+            el.style.right = 'auto';
+        }
+        const startX = e.clientX - el.offsetLeft;
+        const startY = e.clientY - el.offsetTop;
+        el.style.cursor = 'grabbing';
+
+        function onMove(ev) {
+            let x = ev.clientX - startX;
+            let y = ev.clientY - startY;
+            x = Math.max(0, Math.min(x, (page ? page.offsetWidth : 794) - el.offsetWidth));
+            y = Math.max(0, Math.min(y, (page ? page.offsetHeight : 1123) - el.offsetHeight));
+            el.style.left = x + 'px';
+            el.style.top  = y + 'px';
+        }
+        function onUp() {
+            el.style.cursor = 'move';
+            document.removeEventListener('mousemove', onMove);
+            document.removeEventListener('mouseup', onUp);
+            localStorage.setItem('piHeadPos', JSON.stringify({
+                x: parseInt(el.style.left),
+                y: parseInt(el.style.top)
+            }));
+        }
+        document.addEventListener('mousemove', onMove);
+        document.addEventListener('mouseup', onUp);
+    }
+
     function startOurSideDrag(e) {
         e.preventDefault();
         const el = document.getElementById('ourSideBox');
