@@ -1212,6 +1212,7 @@
         // D&Dイベントを各カードに登録
         if (!q) {
             let dragSrcName = null;
+            let dragOverCard = null;
             grid.querySelectorAll('.cust-card').forEach(card => {
                 card.setAttribute('draggable', 'true');
 
@@ -1222,13 +1223,16 @@
                 });
                 card.addEventListener('dragend', () => {
                     card.classList.remove('dragging');
-                    grid.querySelectorAll('.cust-card').forEach(c => c.classList.remove('drag-over'));
+                    if (dragOverCard) { dragOverCard.classList.remove('drag-over'); dragOverCard = null; }
                 });
                 card.addEventListener('dragover', e => {
                     e.preventDefault();
                     e.dataTransfer.dropEffect = 'move';
-                    grid.querySelectorAll('.cust-card').forEach(c => c.classList.remove('drag-over'));
-                    card.classList.add('drag-over');
+                    if (dragOverCard !== card) {
+                        if (dragOverCard) dragOverCard.classList.remove('drag-over');
+                        dragOverCard = card;
+                        card.classList.add('drag-over');
+                    }
                 });
                 card.addEventListener('drop', e => {
                     e.preventDefault();
@@ -1243,6 +1247,7 @@
 
                     names.splice(srcIdx, 1);
                     names.splice(destIdx, 0, dragSrcName);
+                    dragOverCard = null;
                     saveCustomerOrder(names);
                     renderCustomerGrid();
                 });
