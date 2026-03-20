@@ -689,8 +689,22 @@
             align-items: center;
         }
 /* D&D 並び替え */
+        .cust-card { position: relative; }
         .cust-card[draggable="true"] { cursor: grab; }
         .cust-card[draggable="true"]:active { cursor: grabbing; }
+        .drag-handle {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            font-size: 14px;
+            color: var(--text-muted);
+            opacity: 0.4;
+            line-height: 1;
+            pointer-events: none;
+            user-select: none;
+            transition: opacity 0.15s;
+        }
+        .cust-card:hover .drag-handle { opacity: 0.9; }
         .cust-card.dragging { opacity: 0.4; transform: scale(0.97); }
         .cust-card.drag-over { border-color: var(--pink); box-shadow: 0 0 0 2px rgba(233,30,99,0.4); }
         /* 月別ヘッダー（請求書サイドバー内） */
@@ -1145,6 +1159,7 @@
 
             return `
             <div class="cust-card" onclick="openCustomerInvoices(this.dataset.name)" data-name="${escHtml(name)}">
+                <span class="drag-handle">⠿</span>
                 <div class="cust-card-name">${escHtml(name)}</div>
                 ${agency ? `<div class="cust-card-agency">${escHtml(agency)}</div>` : ''}
                 <div class="cust-card-info">
