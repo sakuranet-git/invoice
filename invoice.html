@@ -868,11 +868,12 @@
                     <table class="item-table">
                         <thead>
                             <tr>
-                                <th style="width:40%;">品名・内容</th>
-                                <th style="width:10%;">数量</th>
-                                <th style="width:12%;">単位</th>
-                                <th style="width:18%;">単価（円）</th>
-                                <th style="width:16%;">小計（円）</th>
+                                <th style="width:30%;">品名・内容</th>
+                                <th style="width:8%;">数量</th>
+                                <th style="width:8%;">単位</th>
+                                <th style="width:14%;">単価（円）</th>
+                                <th style="width:14%;">小計（円）</th>
+                                <th style="width:22%;">備考</th>
                                 <th style="width:4%;"></th>
                             </tr>
                         </thead>
@@ -1624,7 +1625,7 @@
     // ─────────────────────────────────────────
 
     /** 品目行を追加 */
-    function addItem(name = '', qty = 1, unit = '式', price = 0) {
+    function addItem(name = '', qty = 1, unit = '式', price = 0, note = '') {
         const tbody = document.getElementById('itemsBody');
         const idx   = tbody.rows.length;
 
@@ -1636,6 +1637,7 @@
             <td><input type="text"   class="item-unit"  value="${escHtml(unit)}"   placeholder="式"     style="width:50px;"></td>
             <td><input type="number" class="item-price" value="${price}" min="0"    style="width:110px;" onchange="updateTotals()"></td>
             <td class="subtotal-cell num-cell">¥${formatNum(qty * price)}</td>
+            <td><input type="text"   class="item-note"  value="${escHtml(note)}"   placeholder="備考" style="width:100%;"></td>
             <td><button class="del-btn" onclick="removeItem(this)" title="削除">✕</button></td>
         `;
         tbody.appendChild(tr);
@@ -1652,7 +1654,7 @@
     function renderItems(items) {
         document.getElementById('itemsBody').innerHTML = '';
         if (items.length === 0) { addItem(); return; }
-        items.forEach(item => addItem(item.name, item.qty, item.unit, item.price));
+        items.forEach(item => addItem(item.name, item.qty, item.unit, item.price, item.note || ''));
     }
 
     /** 品目を配列として収集 */
@@ -1662,6 +1664,7 @@
             qty:   parseFloat(tr.querySelector('.item-qty')?.value)  || 0,
             unit:  tr.querySelector('.item-unit')?.value  || '式',
             price: parseFloat(tr.querySelector('.item-price')?.value) || 0,
+            note:  tr.querySelector('.item-note')?.value  || '',
         }));
     }
 
@@ -1780,10 +1783,11 @@
                 <td class="pi-td-c">${escHtml(it.unit)}</td>
                 <td class="pi-td-r">¥${formatNum(it.price)}</td>
                 <td class="pi-td-r">¥${formatNum(it.qty * it.price)}</td>
+                <td style="font-size:11px;color:#555;">${escHtml(it.note || '')}</td>
             </tr>`).join('');
 
         const emptyRows = Math.max(0, 20 - data.items.length);
-        const blankRows = Array(emptyRows).fill('<tr><td>&nbsp;</td><td></td><td></td><td></td><td></td></tr>').join('');
+        const blankRows = Array(emptyRows).fill('<tr><td>&nbsp;</td><td></td><td></td><td></td><td></td><td></td></tr>').join('');
 
         return `
         <div class="pi-page">
@@ -1826,11 +1830,12 @@
                 <table class="pi-table">
                     <thead>
                         <tr>
-                            <th style="width:42%;">商品コード／商品名</th>
-                            <th style="width:8%;">数量</th>
-                            <th style="width:8%;">単位</th>
-                            <th style="width:16%;">単価</th>
-                            <th style="width:16%;">金額</th>
+                            <th style="width:30%;">商品コード／商品名</th>
+                            <th style="width:7%;">数量</th>
+                            <th style="width:7%;">単位</th>
+                            <th style="width:13%;">単価</th>
+                            <th style="width:13%;">金額</th>
+                            <th style="width:30%;">備考</th>
                         </tr>
                     </thead>
                     <tbody>${rows}${blankRows}</tbody>
