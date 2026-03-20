@@ -2125,8 +2125,8 @@
             }
             const nameLen = (it.name || '').length;
             const noteLen = (it.note || '').length;
-            const nameFz  = nameLen > 40 ? '9px' : nameLen > 24 ? '11px' : '13px';
-            const noteFz  = noteLen > 35 ? '8px' : noteLen > 20 ? '9px' : '10px';
+            const nameFz  = nameLen > 40 ? '11px' : nameLen > 24 ? '13px' : '15px';
+            const noteFz  = noteLen > 35 ? '7px' : noteLen > 20 ? '8px' : '9px';
             return `<tr>
                 <td style="font-size:${nameFz}; word-break:break-all;">${escHtml(it.name)}</td>
                 <td class="pi-td-r">${it.qty}</td>
