@@ -841,8 +841,11 @@
         <div class="toolbar">
             <button class="btn btn-ghost" id="backBtn" onclick="backToCustomers()" style="display:none;">← 顧客一覧</button>
             <button class="btn btn-primary" onclick="newInvoice()">＋ 新規作成</button>
-            <button class="btn btn-ghost" id="copyBtn" onclick="copyInvoice()" title="①左メニューで元の請求書を開いてこのボタンを押す">①複写元を選択</button>
-            <button class="btn btn-ghost" id="pasteBtn" onclick="pasteInvoice()" title="選択した請求書の顧客・品目を引き継いで新規作成します" style="display:none;color:#10b981;border-color:rgba(16,185,129,0.4);">②新規作成（複写）</button>
+            <button class="btn btn-ghost" id="copyBtn" onclick="copyInvoice()" title="左メニューで元の請求書を開いてこのボタンを押す">📋 複写元を選択</button>
+            <span id="pasteArea" style="display:none; display:none; align-items:center; gap:4px;">
+                <span style="color:#10b981; font-size:12px; font-weight:700;">▶ 次はこれを押す</span>
+                <button class="btn btn-ghost" id="pasteBtn" onclick="pasteInvoice()" style="color:#10b981;border-color:rgba(16,185,129,0.6); font-weight:700;">✅ この内容で新規作成</button>
+            </span>
             <button class="btn btn-ghost" onclick="saveInvoice()">💾 保存</button>
             <button class="btn btn-ghost" id="confirmBtn" onclick="confirmInvoice()" style="color:#e91e63;border-color:rgba(233,30,99,0.4);" title="確定すると編集・削除できなくなります">🔒 確定</button>
             <button class="btn btn-ghost" id="testModeBtn" onclick="toggleTestMode()" title="テストモード：確定済みでも編集・削除可能" style="color:#f59e0b;border-color:rgba(245,158,11,0.4);font-size:11px;">🧪 テスト</button>
@@ -1612,9 +1615,9 @@
             return;
         }
         copiedInvoice = { ...currentInvoice, items: JSON.parse(JSON.stringify(currentInvoice.items || [])) };
-        const pasteBtn = document.getElementById('pasteBtn');
-        if (pasteBtn) pasteBtn.style.display = '';
-        showToast(`📋 コピーしました：${copiedInvoice.clientName || ''} ${copiedInvoice.invoiceNumber || ''}　→ ペーストボタンで新規作成`);
+        const pasteArea = document.getElementById('pasteArea');
+        if (pasteArea) { pasteArea.style.display = 'flex'; }
+        showToast(`📋 ${copiedInvoice.clientName || ''} ${copiedInvoice.invoiceNumber || ''} をコピーしました。緑のボタンを押すと新規作成されます`);
     }
 
     function pasteInvoice() {
@@ -1647,9 +1650,11 @@
         if (tsArea) tsArea.style.display = 'none';
         const mlSection = document.getElementById('mailLogSection');
         if (mlSection) mlSection.style.display = 'none';
+        const pasteArea = document.getElementById('pasteArea');
+        if (pasteArea) pasteArea.style.display = 'none';
         updateContextBar('new');
 
-        showToast('📋 ペーストしました。内容を確認・編集して保存してください。');
+        showToast('✅ 複写して新規作成しました。内容を確認・編集して保存してください。');
     }
 
     // ─────────────────────────────────────────
