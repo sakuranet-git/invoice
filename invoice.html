@@ -688,33 +688,7 @@
             justify-content: space-between;
             align-items: center;
         }
-        /* 顧客グリッド折りたたみ */
-        .customer-grid-wrap {
-            transition: max-height 0.35s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.25s ease;
-        }
-        .customer-grid-wrap.collapsed {
-            max-height: 0;
-            opacity: 0;
-            overflow: hidden;
-            padding: 0;
-        }
-        .customer-grid-wrap:not(.collapsed) {
-            max-height: 2000px;
-            opacity: 1;
-        }
-        .toggle-grid-btn {
-            background: none;
-            border: 1px solid var(--glass-border);
-            border-radius: 8px;
-            color: var(--text-muted);
-            padding: 4px 10px;
-            font-size: 12px;
-            cursor: pointer;
-            transition: all 0.2s;
-            white-space: nowrap;
-        }
-        .toggle-grid-btn:hover { border-color: var(--pink); color: var(--text); }
-        /* D&D 並び替え */
+/* D&D 並び替え */
         .cust-card[draggable="true"] { cursor: grab; }
         .cust-card[draggable="true"]:active { cursor: grabbing; }
         .cust-card.dragging { opacity: 0.4; transform: scale(0.97); }
@@ -754,7 +728,6 @@
                placeholder="顧客名・電話番号で検索..."
                oninput="renderCustomerGrid(this.value)"
                style="width:260px;">
-        <button class="toggle-grid-btn" id="toggleGridBtn" onclick="toggleCustomerGrid()">▲ 折りたたむ</button>
     </div>
     <div class="customer-grid-wrap">
         <div class="customer-grid" id="customerGrid">
@@ -1079,8 +1052,6 @@
         // 新規請求書をデフォルトで開始
         newInvoice();
 
-        // 顧客グリッドの折りたたみ状態を復元
-        restoreGridCollapse();
     });
 
     // ─────────────────────────────────────────
@@ -1117,29 +1088,7 @@
         }
     }
 
-    // ─────────────────────────────────────────
-    // 顧客グリッド折りたたみ
-    // ─────────────────────────────────────────
-    function toggleCustomerGrid() {
-        const wrap = document.querySelector('.customer-grid-wrap');
-        const btn  = document.getElementById('toggleGridBtn');
-        if (!wrap || !btn) return;
-        const isCollapsed = wrap.classList.toggle('collapsed');
-        btn.textContent = isCollapsed ? '▼ 展開する' : '▲ 折りたたむ';
-        localStorage.setItem('sakura_grid_collapsed', isCollapsed ? '1' : '0');
-    }
-
-    function restoreGridCollapse() {
-        if (localStorage.getItem('sakura_grid_collapsed') === '1') {
-            const wrap = document.querySelector('.customer-grid-wrap');
-            const btn  = document.getElementById('toggleGridBtn');
-            if (!wrap || !btn) return;
-            wrap.classList.add('collapsed');
-            btn.textContent = '▼ 展開する';
-        }
-    }
-
-    // ─────────────────────────────────────────
+// ─────────────────────────────────────────
     // 顧客カード並び替え（D&D）
     // ─────────────────────────────────────────
     const CUSTOMER_ORDER_KEY = 'sakura_customer_order';
