@@ -2123,13 +2123,17 @@
                     <td colspan="6" style="font-weight:700;color:#333;font-size:12px;border-left:3px solid rgba(124,58,237,0.4);">${escHtml(it.name)}</td>
                 </tr>`;
             }
+            const nameLen = (it.name || '').length;
+            const noteLen = (it.note || '').length;
+            const nameFz  = nameLen > 40 ? '9px' : nameLen > 24 ? '11px' : '13px';
+            const noteFz  = noteLen > 35 ? '8px' : noteLen > 20 ? '9px' : '10px';
             return `<tr>
-                <td>${escHtml(it.name)}</td>
+                <td style="font-size:${nameFz}; word-break:break-all;">${escHtml(it.name)}</td>
                 <td class="pi-td-r">${it.qty}</td>
                 <td class="pi-td-c">${escHtml(it.unit)}</td>
                 <td class="pi-td-r">¥${formatNum(it.price)}</td>
                 <td class="pi-td-r">¥${formatNum(it.qty * it.price)}</td>
-                <td style="font-size:11px;color:#555;">${escHtml(it.note || '')}</td>
+                <td style="font-size:${noteFz};color:#555; word-break:break-all;">${escHtml(it.note || '')}</td>
             </tr>`;
         }).join('');
 
