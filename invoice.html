@@ -1101,7 +1101,9 @@
         unsubscribeInvoices = db.collection('invoices')
             .orderBy('createdAt', 'desc')
             .onSnapshot(snapshot => {
-                invoiceCache = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                invoiceCache = snapshot.docs
+                    .map(doc => ({ id: doc.id, ...doc.data() }))
+                    .filter(inv => !inv.deleted);
                 const list = currentCustomerFilter
                     ? invoiceCache.filter(inv => inv.clientName === currentCustomerFilter)
                     : invoiceCache;
@@ -1666,18 +1668,29 @@
     // ─────────────────────────────────────────
     async function deleteInvoice(id, event) {
         event.stopPropagation();
-        const targetForLockCheck = invoiceCache.find(inv => inv.id === id);
-        if (targetForLockCheck && targetForLockCheck.locked) {
+        // 確定済みチェック
+        const target = invoiceCache.find(inv => inv.id === id);
+        if (target && target.locked) {
             showToast('🔒 確定済みの請求書は削除できません（電子帳簿保存法）');
             return;
         }
-        if (!confirm('この請求書を削除しますか？\n（この操作は取り消せません）')) return;
+        if (!confirm('この請求書を削除しますか？\n（データはアーカイブとして保存されます）')) return;
         try {
-            await db.collection('invoices').doc(id).delete();
-            if (currentInvoice && currentInvoice.id === id) {
-                newInvoice();
-            }
-            showToast('🗑 削除しました');
+            // 論理削除：Firestoreのドキュメントは残し、deletedフラグを立てる
+            await db.collection('invoices').doc(id).update({
+                deleted:   true,
+                deletedAt: firebase.firestore.FieldValue.serverTimestamp(),
+            });
+            await db.collection('audit_log').add({
+                invoiceId:     id,
+                invoiceNumber: target ? target.invoiceNumber : '',
+                action:        'delete',
+                clientName:    target ? target.clientName : '',
+                total:         target ? target.total : 0,
+                timestamp:     firebase.firestore.FieldValue.serverTimestamp(),
+            });
+            if (currentInvoice && currentInvoice.id === id) { newInvoice(); }
+            showToast('🗑 削除しました（アーカイブ保存済み）');
         } catch (e) {
             console.error('削除エラー:', e);
             showToast('❌ 削除に失敗しました: ' + e.message);
