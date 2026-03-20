@@ -179,6 +179,7 @@
         .status-sent     { background: rgba(16,185,129,0.2);  color: #10b981; }
         .status-paid     { background: rgba(124,58,237,0.2);  color: #a78bfa; }
         .status-unpaid   { background: rgba(239,68,68,0.2);   color: #ef4444; }
+        .status-confirmed { background: rgba(233,30,99,0.2); color: #e91e63; font-weight:700; }
 
         /* ===== メインエリア ===== */
         .main-area {
@@ -801,6 +802,7 @@
             <button class="btn btn-primary" onclick="newInvoice()">＋ 新規作成</button>
             <button class="btn btn-ghost" onclick="duplicateInvoice()">📋 複写（前回コピー）</button>
             <button class="btn btn-ghost" onclick="saveInvoice()">💾 保存</button>
+            <button class="btn btn-ghost" id="confirmBtn" onclick="confirmInvoice()" style="color:#e91e63;border-color:rgba(233,30,99,0.4);" title="確定すると編集・削除できなくなります">🔒 確定</button>
             <div style="flex:1;"></div>
             <button class="btn btn-ghost" onclick="openPreviewModal()">🖨 PDF出力</button>
             <button class="btn btn-success" onclick="openMailModal()">✉ メール送信</button>
@@ -824,6 +826,7 @@
                             <option value="sent">送信済み</option>
                             <option value="paid">入金済み</option>
                             <option value="unpaid">未入金</option>
+                            <option value="confirmed" style="color:#e91e63;">🔒 確定（編集不可）</option>
                         </select>
                     </div>
                     <div class="form-group">
@@ -1386,10 +1389,11 @@
         };
 
         const statusMap = {
-            draft:  { label: '下書き',  cls: 'status-draft'  },
-            sent:   { label: '送信済み', cls: 'status-sent'   },
-            paid:   { label: '入金済み', cls: 'status-paid'   },
-            unpaid: { label: '未入金',  cls: 'status-unpaid' },
+            draft:     { label: '下書き',       cls: 'status-draft'     },
+            sent:      { label: '送信済み',      cls: 'status-sent'      },
+            paid:      { label: '入金済み',      cls: 'status-paid'      },
+            unpaid:    { label: '未入金',        cls: 'status-unpaid'    },
+            confirmed: { label: '🔒 確定',       cls: 'status-confirmed' },
         };
 
         if (list.length === 0) {
@@ -1561,6 +1565,7 @@
 
             renderItems(data.items || []);
             updateTotals();
+            applyLockUI(!!(data.locked));
             updateContextBar('edit', data.invoiceNumber);
             renderInvoiceList(invoiceCache); // アクティブ状態更新
 
@@ -1574,6 +1579,7 @@
     // Firestoreへ保存
     // ─────────────────────────────────────────
     async function saveInvoice() {
+        if (currentInvoice && currentInvoice.locked) { showToast('🔒 確定済みの請求書は編集できません'); return; }
         const data = collectFormData();
 
         if (!data.clientName) { showToast('⚠ お客様名を入力してください'); return; }
@@ -1597,10 +1603,67 @@
     }
 
     // ─────────────────────────────────────────
+    // 請求書確定（電子帳簿保存法：真実性確保）
+    // ─────────────────────────────────────────
+    async function confirmInvoice() {
+        if (!currentInvoice || !currentInvoice.id) {
+            showToast('⚠ 先に保存してから確定してください');
+            return;
+        }
+        if (currentInvoice.locked) {
+            showToast('この請求書はすでに確定済みです');
+            return;
+        }
+        if (!confirm('請求書を確定しますか？\n確定後は編集・削除できなくなります（電子帳簿保存法）。')) return;
+
+        try {
+            await db.collection('invoices').doc(currentInvoice.id).update({
+                status:    'confirmed',
+                locked:    true,
+                lockedAt:  firebase.firestore.FieldValue.serverTimestamp(),
+            });
+            await db.collection('audit_log').add({
+                invoiceId:     currentInvoice.id,
+                invoiceNumber: currentInvoice.invoiceNumber || '',
+                action:        'confirm',
+                clientName:    currentInvoice.clientName || '',
+                total:         currentInvoice.total || 0,
+                timestamp:     firebase.firestore.FieldValue.serverTimestamp(),
+            });
+            currentInvoice.locked = true;
+            currentInvoice.status = 'confirmed';
+            applyLockUI(true);
+            showToast('🔒 確定しました（電子帳簿保存法対応）');
+        } catch (e) {
+            console.error('確定エラー:', e);
+            showToast('❌ 確定に失敗しました: ' + e.message);
+        }
+    }
+
+    function applyLockUI(locked) {
+        const fields = ['invStatus','invDate','clientName','clientContact','clientEmail','clientAddress','paymentMethod','invNote'];
+        fields.forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.disabled = locked;
+        });
+        document.querySelectorAll('#itemsBody input').forEach(el => el.disabled = locked);
+        document.querySelectorAll('#itemsBody button').forEach(el => el.disabled = locked);
+        const addBtn = document.getElementById('addItemBtn');
+        if (addBtn) addBtn.disabled = locked;
+        document.getElementById('confirmBtn').style.display = locked ? 'none' : '';
+        const saveBtn = document.querySelector('[onclick="saveInvoice()"]');
+        if (saveBtn) saveBtn.disabled = locked;
+    }
+
+    // ─────────────────────────────────────────
     // 請求書削除
     // ─────────────────────────────────────────
     async function deleteInvoice(id, event) {
         event.stopPropagation();
+        if (currentInvoice && currentInvoice.id === id && currentInvoice.locked) {
+            showToast('🔒 確定済みの請求書は削除できません');
+            return;
+        }
         if (!confirm('この請求書を削除しますか？\n（この操作は取り消せません）')) return;
         try {
             await db.collection('invoices').doc(id).delete();
