@@ -486,11 +486,14 @@
         @media print {
             @page { size: A4; margin: 0; }
             body { background: white !important; }
-            body > *:not(#previewModal) { display: none !important; }
+            body > *:not(#previewModal):not(#printArea) { display: none !important; }
             #previewModal { background: white !important; padding: 0 !important; display: block !important; }
             #previewModal > div > div:first-child { display: none !important; }
             #a4Canvas { box-shadow: none !important; margin: 0 !important; }
+            #printArea { display: block !important; background: white !important; }
             .pi-page { width: 210mm !important; height: 297mm !important; page-break-after: always; break-after: always; }
+            /* まとめ印刷時はプレビューモーダルを非表示にして printArea のみ出力 */
+            body.print-merge #previewModal { display: none !important; }
         }
 
         #printArea {
@@ -503,7 +506,7 @@
             color: #111;
             background: #fff;
             width: 210mm;
-            height: 297mm;
+            height: 296mm;
             font-size: 12px;
             line-height: 1.5;
             position: relative;
@@ -521,7 +524,7 @@
 
         /* ---- コンテンツラッパー ---- */
         .pi-content {
-            padding: 16px 32px 16px;
+            padding: 22mm 20mm 15mm;
         }
 
         /* ---- ヘッダー行 ---- */
@@ -560,7 +563,6 @@
             gap: 16px;
             margin-bottom: 10px;
             padding-bottom: 10px;
-            border-bottom: 1px solid rgba(233,30,99,0.25);
         }
         .pi-customer { flex: 1; font-size: 12px; line-height: 2; }
         .pi-cust-name {
@@ -593,6 +595,7 @@
             border-collapse: collapse;
             font-size: 11px;
             border: 1px solid #e0d0f0;
+            margin-top: 32px;
         }
         .pi-table th {
             background: linear-gradient(90deg, rgba(233,30,99,0.85), rgba(124,58,237,0.85));
@@ -606,7 +609,7 @@
         }
         .pi-table td {
             border: 1px solid #ede8f5;
-            padding: 5px 6px;
+            padding: 4px 6px;
             vertical-align: middle;
         }
         .pi-table tbody tr:nth-child(even) td { background: rgba(233,30,99,0.03); }
@@ -704,6 +707,109 @@
         }
         .customer-view-header h2 { font-size: 15px; font-weight: 700; flex: 1; }
         .customer-grid-wrap { flex: 1; overflow-y: auto; padding: 20px; }
+        .hide-cust-btn { position: absolute; top: 6px; right: 6px; background: rgba(0,0,0,0.5); border: none; border-radius: 6px; color: var(--text-muted); font-size: 11px; padding: 2px 7px; cursor: pointer; opacity: 0; transition: opacity 0.2s; white-space: nowrap; }
+        .cust-card:hover .hide-cust-btn { opacity: 1; }
+        .hide-cust-btn:hover { background: rgba(239,68,68,0.7); color: #fff; }
+        .show-hidden-btn { background: none; border: 1px solid var(--glass-border); border-radius: 8px; color: var(--text-muted); padding: 4px 10px; font-size: 12px; cursor: pointer; transition: all 0.2s; white-space: nowrap; }
+        .show-hidden-btn:hover { border-color: var(--pink); color: var(--text); }
+        /* ── まとめ請求書PDF ── */
+        .cust-card-check {
+            padding: 3px 10px;
+            border-radius: 20px;
+            border: 1px solid var(--glass-border);
+            background: transparent;
+            color: var(--text-muted);
+            cursor: pointer;
+            font-size: 11px;
+            white-space: nowrap;
+            flex-shrink: 0;
+            transition: all 0.15s;
+        }
+        .cust-card-check::before { content: '＋ '; }
+        .cust-card-check:hover { border-color: #e91e63; color: #e91e63; background: rgba(233,30,99,0.06); }
+        .cust-card.checked .cust-card-check {
+            background: #e91e63;
+            border-color: #e91e63;
+            color: #fff;
+        }
+        .cust-card.checked .cust-card-check::before { content: '✓ '; }
+        .cust-card.checked {
+            outline: 2px solid #e91e63;
+            background: rgba(233,30,99,0.07);
+            box-shadow: 0 0 0 4px rgba(233,30,99,0.08);
+        }
+        .cust-card-group-btn {
+            display: block;
+            width: 100%;
+            margin-top: 8px;
+            padding: 5px 8px;
+            font-size: 11px;
+            background: transparent;
+            color: var(--text-muted);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            cursor: pointer;
+            text-align: center;
+            transition: all 0.15s;
+        }
+        .cust-card-group-btn:hover { border-color: #e91e63; color: #e91e63; background: rgba(233,30,99,0.06); }
+        /* ── 品目オートコンプリート ── */
+        .item-suggest-dropdown {
+            position: fixed;
+            z-index: 9999;
+            background: #1e1e3a;
+            border: 1px solid #444;
+            border-radius: 8px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+            min-width: 320px;
+            max-width: 500px;
+            max-height: 260px;
+            overflow-y: auto;
+            display: none;
+        }
+        .item-suggest-item {
+            padding: 11px 14px;
+            cursor: pointer;
+            font-size: 13px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            transition: background 0.1s;
+        }
+        .item-suggest-item:last-child { border-bottom: none; }
+        .item-suggest-item:hover,
+        .item-suggest-item.active { background: rgba(233,30,99,0.15); color: #fff; }
+        .item-suggest-name { flex: 1; }
+        .item-suggest-meta { font-size: 11px; color: #a78bfa; white-space: nowrap; }
+        .merge-bar {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            background: #e91e63;
+            color: #fff;
+            padding: 10px 16px;
+            border-radius: 6px;
+            margin-bottom: 10px;
+            display: none;
+            align-items: center;
+            gap: 10px;
+            font-weight: bold;
+        }
+        .merge-bar button {
+            background: #fff;
+            color: #e91e63;
+            border: none;
+            border-radius: 4px;
+            padding: 5px 12px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        .merge-bar .cancel-btn {
+            background: rgba(255,255,255,0.3);
+            color: #fff;
+            margin-left: auto;
+        }
         .customer-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
@@ -775,10 +881,17 @@
 <header>
     <h1 onclick="location.reload()" style="cursor:pointer;">🧾 SAKURA 請求書システム</h1>
     <div style="display:flex; align-items:center; gap:12px;">
+        <select id="invoiceMode" onchange="localStorage.setItem('invoiceMode', this.value)"
+            style="font-size:12px; padding:4px 10px; border-radius:6px; background:#1a1525; color:#e2d9f3; border:1px solid var(--glass-border); cursor:pointer;">
+            <option value="invoice">インボイス対応 請求書（株式会社さくらねっと）</option>
+            <option value="estimate">見積書（株式会社さくらねっと）</option>
+            <option value="delivery">納品書（株式会社さくらねっと）</option>
+            <option value="normal">通常請求書（SAKURA-NET）</option>
+        </select>
         <div id="syncBadge" style="font-size:12px; padding:4px 12px; border-radius:20px; background:rgba(255,255,255,0.08); color:var(--text-muted);">
             接続中...
         </div>
-        <span style="font-size:13px; color:var(--text-muted);">v1.0.0</span>
+        <span style="font-size:13px; color:var(--text-muted);">v1.5.1</span>
     </div>
 </header>
 
@@ -790,8 +903,14 @@
                placeholder="顧客名・電話番号で検索..."
                oninput="renderCustomerGrid(this.value)"
                style="width:260px;">
+        <button class="show-hidden-btn" id="showHiddenBtn" onclick="toggleShowHidden()" style="display:none;"></button>
     </div>
     <div class="customer-grid-wrap">
+        <div id="mergeBar" class="merge-bar">
+            <span id="mergeBarLabel">まとめてPDF（0件）</span>
+            <button onclick="mergePdf()">📄 PDF生成</button>
+            <button class="cancel-btn" onclick="clearCheckedCustomers()">✕ キャンセル</button>
+        </div>
         <div class="customer-grid" id="customerGrid">
             <p style="text-align:center; color:var(--text-muted); padding:40px; font-size:13px;">データを読み込み中...</p>
         </div>
@@ -1065,18 +1184,24 @@
             <span style="font-size:14px; font-weight:700; color:#e2d9f3;">🖨 A4プレビュー &nbsp;<span style="font-size:11px; color:#a78bfa; font-weight:400;">印鑑をドラッグして配置できます</span></span>
             <div style="display:flex; gap:8px;">
                 <button class="btn btn-ghost" onclick="closePreviewModal()" style="font-size:12px; padding:4px 14px;">✕ 閉じる</button>
-                <button class="btn btn-ghost" onclick="window.print()" style="font-size:12px; padding:4px 14px;">🖨 印刷/PDF保存</button>
+                <button class="btn btn-ghost" onclick="printFromPreview()" style="font-size:12px; padding:4px 14px;">🖨 印刷/PDF保存</button>
                 <button class="btn btn-success" onclick="openMailFromPreview()" style="font-size:12px; padding:4px 14px;">📧 このPDFで送信</button>
             </div>
         </div>
-        <!-- A4キャンバス -->
-        <div id="a4Canvas" style="width:210mm; height:297mm; background:#fff; margin:0 auto; position:relative; box-shadow:0 10px 30px rgba(0,0,0,0.5); overflow:hidden;">
-            <div id="a4Content"></div>
+        <!-- A4キャンバスラッパー（影用） -->
+        <div style="width:210mm; margin:0 auto; box-shadow:0 10px 30px rgba(0,0,0,0.5); border-radius:0 0 8px 8px; overflow:hidden; background:#fff;">
+            <div id="a4Canvas" style="width:210mm; height:297mm; background:#fff !important; position:relative; overflow:hidden;">
+                <div id="a4Content"></div>
             <!-- 自社情報（ドラッグ可能） -->
             <div id="ourSideBox"
                 style="position:absolute; cursor:move; user-select:none;"
                 title="ドラッグで位置を変更できます"
                 onmousedown="startOurSideDrag(event)"></div>
+            <!-- 区切り線（ドラッグ可能） -->
+            <div id="dividerLine"
+                style="position:absolute; left:32px; height:2px; width:730px; background:rgba(233,30,99,0.35); cursor:move; user-select:none; z-index:5;"
+                title="ドラッグで位置を変更できます"
+                onmousedown="startDividerDrag(event)"></div>
             <!-- 会社印（ドラッグ可能） -->
             <img id="stampCo" src="" alt="社印"
                 style="position:absolute; width:64px; height:64px; object-fit:contain; cursor:grab; user-select:none; opacity:0.9;"
@@ -1085,6 +1210,7 @@
             <img id="stampPer" src="" alt="個人印"
                 style="position:absolute; width:52px; height:52px; object-fit:contain; cursor:grab; user-select:none; opacity:0.9;"
                 onmousedown="startStampDrag(event,'stampPer')">
+            </div>
         </div>
     </div>
 </div>
@@ -1104,6 +1230,11 @@
         <div style="margin-bottom:12px;">
             <label style="font-size:11px; color:var(--text-muted); display:block; margin-bottom:4px;">本文</label>
             <textarea id="mailBody2" style="width:100%; box-sizing:border-box; min-height:140px;"></textarea>
+        </div>
+        <div style="margin-bottom:12px;">
+            <label style="font-size:11px; color:var(--text-muted); display:block; margin-bottom:4px;">📎 添付PDF（印刷/PDF保存で保存したファイル）</label>
+            <input type="file" id="mailPdfFile" accept=".pdf" style="width:100%; box-sizing:border-box; font-size:13px;">
+            <div id="mailPdfFileName" style="font-size:11px; color:var(--accent); margin-top:4px;"></div>
         </div>
         <div id="mailStatus2" style="font-size:13px; color:var(--warning); min-height:20px; margin-bottom:8px;"></div>
         <div style="display:flex; justify-content:flex-end; gap:8px;">
@@ -1128,6 +1259,8 @@
 
     /** インボイス制度登録番号（固定） */
     const COMPANY_REG_NUMBER = 'T9120001205370';
+    function getInvoiceMode() { return localStorage.getItem('invoiceMode') || 'invoice'; }
+    function getCompanyName()  { return getInvoiceMode() === 'invoice' ? '株式会社さくらねっと' : 'SAKURA-NET'; }
 
     /** @type {firebase.firestore.Firestore} */
     let db;
@@ -1155,6 +1288,9 @@
     // 初期化
     // ─────────────────────────────────────────
     window.addEventListener('DOMContentLoaded', () => {
+        // モード切替セレクトを復元
+        const modeEl = document.getElementById('invoiceMode');
+        if (modeEl) modeEl.value = localStorage.getItem('invoiceMode') || 'invoice';
         try {
             if (!firebase.apps.length) {
                 firebase.initializeApp(FIREBASE_CONFIG);
@@ -1188,6 +1324,7 @@
                 invoiceCache = snapshot.docs
                     .map(doc => ({ id: doc.id, ...doc.data() }))
                     .filter(inv => !inv.deleted);
+                buildItemSuggestions();
                 const list = currentCustomerFilter
                     ? invoiceCache.filter(inv => inv.clientName === currentCustomerFilter)
                     : invoiceCache;
@@ -1216,7 +1353,14 @@
     async function loadCustomerCache() {
         try {
             const snap = await db.collection('customer_records').get();
-            customerCache = snap.docs.map(d => d.data());
+            const normName = s => (s || '').replace(/[\u3000\s]+/g, ' ').trim();
+            const seen = new Map();
+            snap.docs.forEach(d => {
+                const data = d.data();
+                const key = normName(data.name || '');
+                if (!seen.has(key)) seen.set(key, data);
+            });
+            customerCache = [...seen.values()];
             renderCustomerGrid();
         } catch (e) {
             console.warn('顧客データ読込失敗:', e);
@@ -1253,6 +1397,7 @@
     function renderCustomerGrid(searchTerm = '') {
         const grid = document.getElementById('customerGrid');
         const q = (searchTerm || '').toLowerCase().trim();
+        const hidden = loadHiddenCustomers();
 
         let customers = customerCache;
         if (q) {
@@ -1266,8 +1411,39 @@
             customers = applyCustomerOrder(customers);
         }
 
+        // 非表示フィルタ（showingHidden=trueの場合は非表示のみ表示）
+        if (!q) {
+            customers = showingHidden
+                ? customers.filter(c => hidden.has(c.name || ''))
+                : customers.filter(c => !hidden.has(c.name || ''));
+        }
+
+        // normName重複除去（全角/半角スペースの表記ゆれで同一顧客が複数表示されるのを防ぐ）
+        const normName = s => (s || '').replace(/[\u3000\s]+/g, ' ').trim();
+        const seenNames = new Map();
+        customers.forEach(c => {
+            const key = normName(c.name || '');
+            if (!seenNames.has(key)) seenNames.set(key, c);
+        });
+        customers = [...seenNames.values()];
+
+        // まとめ請求書PDF用: 会社名プレフィックスでグループ化
+        const getCompanyPrefix = name => {
+            const n = (name || '').trim();
+            const idx = n.lastIndexOf(' ');
+            return idx > 0 ? n.substring(0, idx) : n;
+        };
+        const prefixMap = new Map(); // prefix → [name, ...]
+        customers.forEach(c => {
+            const pre = getCompanyPrefix(c.name || '');
+            if (!prefixMap.has(pre)) prefixMap.set(pre, []);
+            prefixMap.get(pre).push(c.name || '');
+        });
+
+        updateHiddenBtn();
+
         if (customers.length === 0) {
-            grid.innerHTML = '<p style="text-align:center; color:var(--text-muted); padding:40px; font-size:13px;">顧客が見つかりません</p>';
+            grid.innerHTML = `<p style="text-align:center; color:var(--text-muted); padding:40px; font-size:13px;">${showingHidden ? '非表示の顧客はいません' : '顧客が見つかりません'}</p>`;
             return;
         }
 
@@ -1277,9 +1453,16 @@
             const tel      = c.tel1 || c.tel2 || '';
             const email    = c.email || '';
             const invCount = invoiceCache.filter(inv => inv.clientName === name).length;
+            const isHidden = hidden.has(name);
+
+            const prefix = getCompanyPrefix(name);
+            const groupNames = prefixMap.get(prefix) || [];
+            const isChecked = checkedCustomers.some(c => c.name === name);
+            const safeName = escHtml(name).replace(/'/g, "\\'");
+            const safeEmail = escHtml(email).replace(/'/g, "\\'");
 
             return `
-            <div class="cust-card" onclick="openCustomerInvoices(this.dataset.name)" data-name="${escHtml(name)}">
+            <div class="cust-card${isChecked ? ' checked' : ''}" onclick="openCustomerInvoices(this.dataset.name)" data-name="${escHtml(name)}" style="${isHidden ? 'opacity:0.5;' : ''}">
                 <span class="drag-handle">⠿</span>
                 <div class="cust-card-name">${escHtml(name)}</div>
                 ${agency ? `<div class="cust-card-agency">${escHtml(agency)}</div>` : ''}
@@ -1288,9 +1471,13 @@
                     ${email ? `<span>✉ ${escHtml(email)}</span>` : ''}
                 </div>
                 <div class="cust-card-footer">
+                    <button class="cust-card-check" title="まとめ請求書に追加"
+                        onclick="event.stopPropagation(); toggleCustomerCheck('${safeName}', '${safeEmail}', this)">${isChecked ? '選択中' : 'まとめ'}</button>
                     <span>🧾 請求書</span>
                     <span style="font-weight:700; color:${invCount > 0 ? '#a78bfa' : 'var(--text-muted)'};">${invCount} 件</span>
                 </div>
+                ${groupNames.length > 1 ? `<button class="cust-card-group-btn" onclick="event.stopPropagation(); selectCustomerGroup('${escHtml(prefix).replace(/'/g,"\\'")}')">🏢 まとめて選択（${groupNames.length}件）</button>` : ''}
+                <button class="hide-cust-btn" onclick="event.stopPropagation(); ${isHidden ? `restoreCustomer('${escHtml(name).replace(/'/g,"\\'")}')` : `hideCustomer('${escHtml(name).replace(/'/g,"\\'")}')` }">${isHidden ? '✅ 再表示' : '🙈 非表示'}</button>
             </div>`;
         }).join('');
 
@@ -1387,6 +1574,159 @@
 
         // 新規請求書（顧客情報自動入力）
         newInvoice();
+    }
+
+    // ─────────────────────────────────────────
+    // 顧客カード個別非表示
+    // ─────────────────────────────────────────
+    const HIDDEN_CUSTOMERS_KEY = 'sakura_hidden_customers';
+    let showingHidden = false;
+    let checkedCustomers = []; // まとめ請求書PDF用チェック済み顧客 [{name, email}]
+
+    function loadHiddenCustomers() {
+        try { return new Set(JSON.parse(localStorage.getItem(HIDDEN_CUSTOMERS_KEY)) || []); }
+        catch { return new Set(); }
+    }
+
+    function saveHiddenCustomers(set) {
+        localStorage.setItem(HIDDEN_CUSTOMERS_KEY, JSON.stringify([...set]));
+    }
+
+    function hideCustomer(name) {
+        const hidden = loadHiddenCustomers();
+        hidden.add(name);
+        saveHiddenCustomers(hidden);
+        renderCustomerGrid(document.getElementById('customerSearch').value);
+        updateHiddenBtn();
+    }
+
+    function restoreCustomer(name) {
+        const hidden = loadHiddenCustomers();
+        hidden.delete(name);
+        saveHiddenCustomers(hidden);
+        renderCustomerGrid(document.getElementById('customerSearch').value);
+        updateHiddenBtn();
+    }
+
+    function toggleShowHidden() {
+        showingHidden = !showingHidden;
+        renderCustomerGrid(document.getElementById('customerSearch').value);
+        updateHiddenBtn();
+    }
+
+    // ── まとめ請求書PDF ──────────────────────────────
+    function toggleCustomerCheck(name, email, btn) {
+        const idx = checkedCustomers.findIndex(c => c.name === name);
+        const card = btn.closest('.cust-card');
+        if (idx < 0) {
+            // 未選択 → 選択
+            checkedCustomers.push({ name, email });
+            if (card) card.classList.add('checked');
+        } else {
+            // 選択済み → 解除
+            checkedCustomers.splice(idx, 1);
+            if (card) card.classList.remove('checked');
+        }
+        updateMergeBar();
+    }
+
+    function selectCustomerGroup(prefix) {
+        // 同じプレフィックスの顧客を全チェック
+        document.querySelectorAll('.cust-card').forEach(card => {
+            const name = card.dataset.name || '';
+            const n = name.trim();
+            const idx = n.lastIndexOf(' ');
+            const cardPrefix = idx > 0 ? n.substring(0, idx) : n;
+            if (cardPrefix === prefix) {
+                if (!checkedCustomers.some(c => c.name === name)) {
+                    const email = (customerCache.find(c => c.name === name) || {}).email || '';
+                    checkedCustomers.push({ name, email });
+                    card.classList.add('checked');
+                }
+            }
+        });
+        updateMergeBar();
+    }
+
+    function updateMergeBar() {
+        const bar = document.getElementById('mergeBar');
+        const label = document.getElementById('mergeBarLabel');
+        if (!bar) return;
+        if (checkedCustomers.length >= 2) {
+            bar.style.display = 'flex';
+            label.textContent = `まとめてPDF（${checkedCustomers.length}件）`;
+        } else {
+            bar.style.display = 'none';
+        }
+    }
+
+    function clearCheckedCustomers() {
+        checkedCustomers = [];
+        document.querySelectorAll('.cust-card.checked').forEach(card => { card.classList.remove('checked'); });
+        updateMergeBar();
+    }
+
+    async function mergePdf() {
+        if (checkedCustomers.length < 2) return;
+
+        // 会社プレフィックス（全角・半角スペース両対応）
+        const getPrefix = name => {
+            const n = (name || '').trim();
+            const i = Math.max(n.lastIndexOf(' '), n.lastIndexOf('\u3000'));
+            return i > 0 ? n.substring(0, i) : n;
+        };
+        const prefixes = [...new Set(checkedCustomers.map(c => getPrefix(c.name)))];
+        if (prefixes.length > 1) {
+            if (!confirm('⚠️ 異なる会社の請求書が混在しています。\n\n' + checkedCustomers.map(c => '・' + c.name).join('\n') + '\n\nそのまま続けますか？')) return;
+        }
+
+        // 各顧客の最新請求書を取得
+        const pages = [];
+        for (const { name } of checkedCustomers) {
+            const invs = invoiceCache.filter(inv => inv.clientName === name)
+                .sort((a, b) => {
+                    const toNum = v => { const m = String(v || '').match(/(\d{4})[^\d](\d{1,2})/); return m ? parseInt(m[1]) * 100 + parseInt(m[2]) : 0; };
+                    return toNum(b.billingMonth) - toNum(a.billingMonth);
+                });
+            if (invs.length === 0) { showToast('⚠ 「' + name + '」の請求書が見つかりません'); continue; }
+            pages.push(invs[0]);
+        }
+        if (pages.length === 0) { showToast('⚠ 生成できる請求書がありません'); return; }
+
+        // ファイル名（例：3月請求書（株式会社やすら木様）.pdf）
+        const companyName = getPrefix(checkedCustomers[0].name);
+        const bmStr = (pages[0].billingMonth || '');
+        const mm = bmStr.match(/-(\d{2})$/);
+        const monthLabel = mm ? parseInt(mm[1]) + '月' : '';
+        const filename = monthLabel + '請求書（' + companyName + '様）.pdf';
+
+        // 各ページを printArea に追加
+        const printArea = document.getElementById('printArea');
+        printArea.innerHTML = '';
+        pages.forEach(inv => {
+            const wrapper = document.createElement('div');
+            wrapper.innerHTML = buildInvoiceHTML(inv);
+            if (wrapper.firstElementChild) printArea.appendChild(wrapper.firstElementChild);
+        });
+
+        // タイトルをファイル名に変えて印刷（ブラウザの「名前を付けて保存」のデフォルト名になる）
+        const origTitle = document.title;
+        document.title = filename;
+        document.body.classList.add('print-merge');
+        window.print();
+        document.body.classList.remove('print-merge');
+        document.title = origTitle;
+        printArea.innerHTML = '';
+    }
+    // ── まとめ請求書PDF ここまで ──────────────────────
+
+    function updateHiddenBtn() {
+        const btn = document.getElementById('showHiddenBtn');
+        if (!btn) return;
+        const count = loadHiddenCustomers().size;
+        if (count === 0) { btn.style.display = 'none'; showingHidden = false; return; }
+        btn.style.display = '';
+        btn.textContent = showingHidden ? `👁 非表示を隠す（${count}件）` : `👁 非表示：${count}件`;
     }
 
     // ─────────────────────────────────────────
@@ -1700,7 +2040,10 @@
             showTimestamps(data);
             loadInvoiceMailLog(docId);
             updateContextBar('edit', data.invoiceNumber);
-            renderInvoiceList(invoiceCache); // アクティブ状態更新
+            const listForRender = currentCustomerFilter
+                ? invoiceCache.filter(inv => inv.clientName === currentCustomerFilter)
+                : invoiceCache;
+            renderInvoiceList(listForRender); // アクティブ状態更新
 
         } catch (e) {
             console.error('請求書読み込みエラー:', e);
@@ -1721,12 +2064,14 @@
             if (currentInvoice && currentInvoice.id) {
                 // 更新
                 await db.collection('invoices').doc(currentInvoice.id).set(data, { merge: true });
+                buildItemSuggestions();
                 showToast('✅ 更新しました');
             } else {
                 // 新規
                 data.createdAt = firebase.firestore.FieldValue.serverTimestamp();
                 const ref = await db.collection('invoices').add(data);
                 currentInvoice = { id: ref.id, ...data };
+                buildItemSuggestions();
                 showToast('✅ 保存しました');
             }
         } catch (e) {
@@ -1892,6 +2237,126 @@
     // 品目テーブル操作
     // ─────────────────────────────────────────
 
+    // ── 品目オートコンプリート ────────────────────────────
+    const ITEM_SUGGEST_KEY = 'itemSuggestions_v1';
+
+    function buildItemSuggestions() {
+        const map = new Map();
+        invoiceCache.forEach(inv => {
+            const ts = inv.createdAt ? (inv.createdAt.toMillis ? inv.createdAt.toMillis() : 0) : 0;
+            (inv.items || []).forEach(item => {
+                if (!item.name || item.type === 'header') return;
+                const existing = map.get(item.name);
+                if (!existing || ts > existing.ts) {
+                    map.set(item.name, { name: item.name, unit: item.unit || '式', price: item.price || 0, ts });
+                }
+            });
+        });
+        const suggestions = [...map.values()].map(({ name, unit, price }) => ({ name, unit, price }));
+        try { localStorage.setItem(ITEM_SUGGEST_KEY, JSON.stringify(suggestions)); } catch(e) {}
+        return suggestions;
+    }
+
+    function getItemSuggestions() {
+        try {
+            const raw = localStorage.getItem(ITEM_SUGGEST_KEY);
+            return raw ? JSON.parse(raw) : [];
+        } catch(e) { return []; }
+    }
+
+    let _suggestTargetInput = null;
+    let _suggestActiveIdx = -1;
+
+    function showItemSuggest(input, query) {
+        const all = getItemSuggestions();
+        const q = (query || '').trim().toLowerCase();
+        const filtered = q
+            ? all.filter(s => s.name.toLowerCase().includes(q))
+            : all;
+
+        const dd = document.getElementById('itemSuggestDropdown');
+        if (!dd || filtered.length === 0) { hideItemSuggest(); return; }
+
+        _suggestTargetInput = input;
+        _suggestActiveIdx = -1;
+
+        dd.innerHTML = filtered.slice(0, 8).map((s, i) => `
+            <div class="item-suggest-item" data-idx="${i}"
+                 onmousedown="applyItemSuggest(${i})"
+                 onmouseover="highlightSuggest(${i})">
+                <span class="item-suggest-name">${escHtml(s.name)}</span>
+                <span class="item-suggest-meta">${escHtml(s.unit)} &nbsp; ¥${formatNum(s.price)}</span>
+            </div>
+        `).join('');
+        dd._filtered = filtered.slice(0, 8);
+
+        const rect = input.getBoundingClientRect();
+        dd.style.top   = (rect.bottom + 2) + 'px';
+        dd.style.left  = rect.left + 'px';
+        dd.style.width = Math.max(rect.width, 320) + 'px';
+        dd.style.display = 'block';
+    }
+
+    function highlightSuggest(idx) {
+        _suggestActiveIdx = idx;
+        document.querySelectorAll('.item-suggest-item').forEach((el, i) => {
+            el.classList.toggle('active', i === idx);
+        });
+    }
+
+    function applyItemSuggest(idx) {
+        const dd = document.getElementById('itemSuggestDropdown');
+        if (!dd || !_suggestTargetInput) return;
+        const item = dd._filtered[idx];
+        if (!item) return;
+
+        const tr = _suggestTargetInput.closest('tr');
+        if (!tr) return;
+
+        _suggestTargetInput.value = item.name;
+        const unitInput  = tr.querySelector('.item-unit');
+        const priceInput = tr.querySelector('.item-price');
+        if (unitInput)  unitInput.value  = item.unit;
+        if (priceInput) priceInput.value = item.price;
+        updateTotals();
+        hideItemSuggest();
+    }
+
+    function hideItemSuggest() {
+        const dd = document.getElementById('itemSuggestDropdown');
+        if (dd) dd.style.display = 'none';
+        _suggestTargetInput = null;
+        _suggestActiveIdx = -1;
+    }
+
+    function handleSuggestKey(e) {
+        const dd = document.getElementById('itemSuggestDropdown');
+        if (!dd || dd.style.display === 'none') return;
+        const items = dd.querySelectorAll('.item-suggest-item');
+        if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            _suggestActiveIdx = Math.min(_suggestActiveIdx + 1, items.length - 1);
+            highlightSuggest(_suggestActiveIdx);
+        } else if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            _suggestActiveIdx = Math.max(_suggestActiveIdx - 1, 0);
+            highlightSuggest(_suggestActiveIdx);
+        } else if (e.key === 'Enter' && _suggestActiveIdx >= 0) {
+            e.preventDefault();
+            applyItemSuggest(_suggestActiveIdx);
+        } else if (e.key === 'Escape') {
+            hideItemSuggest();
+        }
+    }
+
+    document.addEventListener('mousedown', e => {
+        const dd = document.getElementById('itemSuggestDropdown');
+        if (dd && !dd.contains(e.target) && e.target !== _suggestTargetInput) {
+            hideItemSuggest();
+        }
+    });
+    // ── 品目オートコンプリートここまで ──────────────────
+
     /** 品目行を追加 */
     function addItem(name = '', qty = 1, unit = '式', price = 0, note = '') {
         const tbody = document.getElementById('itemsBody');
@@ -1899,7 +2364,10 @@
         tr.dataset.type = 'item';
         tr.innerHTML = `
             <td class="row-drag-handle" title="ドラッグで並び替え">⠿</td>
-            <td><input type="text"   class="item-name"  value="${escHtml(name)}"  placeholder="例：出張サポート費" oninput="updateTotals()"></td>
+            <td><input type="text"   class="item-name"  value="${escHtml(name)}"  placeholder="例：出張サポート費"
+                oninput="updateTotals(); showItemSuggest(this, this.value)"
+                onfocus="showItemSuggest(this, this.value)"
+                onkeydown="handleSuggestKey(event)"></td>
             <td><input type="number" class="item-qty"   value="${qty}"  min="1"    style="width:60px;"  onchange="updateTotals()"></td>
             <td><input type="text"   class="item-unit"  value="${escHtml(unit)}"   placeholder="式"     style="width:50px;"></td>
             <td><input type="number" class="item-price" value="${price}" min="0"    style="width:110px;" onchange="updateTotals()"></td>
@@ -2053,15 +2521,18 @@
 
         const valLower = val.toLowerCase();
 
+        // 名前を正規化（全角スペース→半角・連続スペース→1つ・前後トリム）
+        const normName = s => (s || '').replace(/[\u3000\s]+/g, ' ').trim();
+
         // customer_records から検索（name・agency 両方対象）
         const fromCustomers = [...new Map(
             customerCache
                 .filter(c => {
-                    const n = (c.name || '').toLowerCase();
+                    const n = normName(c.name).toLowerCase();
                     const a = (c.agency || '').toLowerCase();
                     return n.includes(valLower) || a.includes(valLower);
                 })
-                .map(c => [c.name, c])
+                .map(c => [normName(c.name), c])
         ).values()].slice(0, 8).map(c => ({
             name: c.name || '',
             phone: c.tel1 || c.tel2 || '',
@@ -2070,11 +2541,11 @@
         }));
 
         // 既存請求書からも補完（customer_records にない顧客）
-        const existingNames = new Set(fromCustomers.map(c => c.name));
+        const existingNames = new Set(fromCustomers.map(c => normName(c.name)));
         const fromInvoices = [...new Map(
             invoiceCache
-                .filter(inv => (inv.clientName || '').toLowerCase().includes(valLower) && !existingNames.has(inv.clientName))
-                .map(inv => [inv.clientName, inv])
+                .filter(inv => (inv.clientName || '').toLowerCase().includes(valLower) && !existingNames.has(normName(inv.clientName)))
+                .map(inv => [normName(inv.clientName), inv])
         ).values()].slice(0, 3).map(inv => ({
             name: inv.clientName || '',
             phone: inv.clientContact || '',
@@ -2134,7 +2605,7 @@
             </tr>`;
         }).join('');
 
-        const topBlankRows = Array(3).fill('<tr><td>&nbsp;</td><td></td><td></td><td></td><td></td><td></td></tr>').join('');
+        const topBlankRows = '';
         const emptyRows = Math.max(0, 20 - data.items.length);
         const blankRows = Array(emptyRows).fill('<tr><td>&nbsp;</td><td></td><td></td><td></td><td></td><td></td></tr>').join('');
 
@@ -2147,7 +2618,7 @@
                         <img src="${LOGO_B64}" style="width:50px;height:50px;object-fit:contain;border-radius:6px;" alt="logo">
                         <div style="display:flex;align-items:center;gap:8px;">
                             <div class="pi-title-accent"></div>
-                            <div class="pi-title-box">請　求　書</div>
+                            <div class="pi-title-box">${{estimate:'見　積　書', delivery:'納　品　書'}[getInvoiceMode()] || '請　求　書'}</div>
                         </div>
                     </div>
                     <div class="pi-head-right" id="piHeadRight"
@@ -2189,22 +2660,45 @@
                     <div class="pi-fc"><span class="pi-fc-lbl">消費税(10%)</span><span class="pi-fc-val">¥${formatNum(data.tax)}</span></div>
                     <div class="pi-fc"><span class="pi-fc-lbl">合　計</span><span class="pi-fc-val">¥${formatNum(data.total)}</span></div>
                 </div>
-                <div style="font-size:10px;color:#888;margin-top:4px;text-align:right;">※ 消費税率 10% 適用 ／ 適格請求書発行事業者登録番号：${COMPANY_REG_NUMBER}</div>
+                ${!['estimate','delivery'].includes(getInvoiceMode()) ? `<div style="font-size:10px;color:#888;margin-top:4px;text-align:right;">※ 消費税率 10% 適用${getInvoiceMode() === 'invoice' ? ` ／ 適格請求書発行事業者登録番号：${COMPANY_REG_NUMBER}` : ''}</div>` : ''}
             </div>
-        </div>`;
+        </div>`.trim();
     }
 
     function printInvoice() {
         const data = collectFormData();
         const printArea = document.getElementById('printArea');
         printArea.innerHTML = buildInvoiceHTML(data);
+        // ファイル名用にタイトルを一時変更
+        const origTitle = document.title;
+        document.title = getInvoicePdfTitle();
         window.print();
+        document.title = origTitle;
+    }
+
+    // プレビューモーダルからの印刷
+    function printFromPreview() {
+        const origTitle = document.title;
+        document.title = getInvoicePdfTitle();
+        window.print();
+        document.title = origTitle;
+    }
+
+    // 請求書PDFのタイトル文字列を生成（例: "3月分請求書（株式会社○○様分）"）
+    function getInvoicePdfTitle() {
+        const data = collectFormData();
+        const bm = getBillingMonthLabel(); // "2026年3月分" など
+        const client = data.clientName || 'お客様';
+        const docType = {estimate:'見積書', delivery:'納品書'}[getInvoiceMode()] || '請求書';
+        return `${bm}${docType}（${client}様分）`;
     }
 
     function openPreviewModal() {
         const data = collectFormData();
         document.getElementById('a4Content').innerHTML = buildInvoiceHTML(data);
-        document.getElementById('stampCo').src  = STAMP_CO_B64;
+        const _stampCo = document.getElementById('stampCo');
+        _stampCo.src = STAMP_CO_B64;
+        _stampCo.style.display = getInvoiceMode() === 'invoice' ? '' : 'none';
         document.getElementById('stampPer').src = STAMP_PER_B64;
         const coPos  = JSON.parse(localStorage.getItem('stampCoPos')  || 'null') || { x: 490, y: 140 };
         const perPos = JSON.parse(localStorage.getItem('stampPerPos') || 'null') || { x: 490, y: 195 };
@@ -2216,13 +2710,15 @@
         per.style.top  = perPos.y + 'px';
         // 自社情報ブロック（ドラッグ可能）
         const ourSideBox = document.getElementById('ourSideBox');
+        const _mode = getInvoiceMode();
         ourSideBox.innerHTML = `<div class="pi-our-side">
             <div>〒532-0012</div>
             <div>大阪市淀川区木川東4-3-34-514</div>
-            <div class="pi-our-name">株式会社さくらねっと</div>
+            <div class="pi-our-name">${getCompanyName()}</div>
             <div>TEL 06-7777-2720&emsp;FAX 06-6303-3767</div>
             <div>担当者：伏見</div>
-            <div class="pi-our-reg">登録番号：${COMPANY_REG_NUMBER}</div>
+            ${_mode === 'invoice' ? `<div class="pi-our-reg">登録番号：${COMPANY_REG_NUMBER}</div>` : ''}
+
         </div>`;
         const ourPos = JSON.parse(localStorage.getItem('ourSidePos') || 'null') || { x: 430, y: 130 };
         ourSideBox.style.left = ourPos.x + 'px';
@@ -2451,11 +2947,27 @@
 
         const element = document.getElementById('a4Canvas');
         const opt = {
-            margin:      [0, 0, 0, 0],
+            margin:      0,
             filename:    filename,
             image:       { type: 'jpeg', quality: 0.98 },
-            html2canvas: { scale: 2, useCORS: true, backgroundColor: '#fff' },
-            jsPDF:       { unit: 'px', format: [794, 1123], orientation: 'portrait' }
+            html2canvas: { 
+                scale: 2, 
+                useCORS: true, 
+                backgroundColor: '#ffffff', 
+                scrollY: 0,
+                onclone: (clonedDoc) => {
+                    const el = clonedDoc.getElementById('a4Canvas');
+                    if (el) {
+                        el.style.backgroundColor = '#ffffff';
+                        el.style.boxShadow = 'none';
+                        // 子要素にも白背景を徹底
+                        const contents = el.querySelectorAll('.pi-page');
+                        contents.forEach(c => c.style.backgroundColor = '#ffffff');
+                    }
+                }
+            },
+            jsPDF:       { unit: 'mm', format: 'a4', orientation: 'portrait' },
+            pagebreak:   { mode: ['avoid-all', 'css', 'legacy'] }
         };
         const pdf = await html2pdf().set(opt).from(element).outputPdf('datauristring');
         return { base64: pdf.split(',')[1], filename };
@@ -2470,12 +2982,13 @@
         const clientName = data.clientName || 'お客様';
 
         document.getElementById('mailTo2').value      = data.clientEmail || '';
-        document.getElementById('mailSubject2').value = `【株式会社さくらねっと】${bm}請求書のご案内（${data.invoiceNumber}）`;
+        const _cn = getCompanyName();
+        document.getElementById('mailSubject2').value = `【${_cn}】${bm}請求書のご案内（${data.invoiceNumber}）`;
         document.getElementById('mailBody2').value    =
 `${clientName} 御中
 
 いつも大変お世話になっております。
-株式会社さくらねっとでございます。
+${_cn}でございます。
 
 ${bm}の請求書をPDFにてお送りいたします。
 ご確認のほどよろしくお願いいたします。
@@ -2493,7 +3006,7 @@ ${bm}の請求書をPDFにてお送りいたします。
 クレジットカード決済はStripe社からも明細が届きますが、弊社の請求書を必ず採用してください。
 
 ─────────────────────────────
-株式会社さくらねっと
+${_cn}
 TEL: 06-7777-2720 / FAX: 06-6303-3767
 E-mail: system@sakuranet-co.jp（送信専用）
 ─────────────────────────────`;
@@ -2595,15 +3108,34 @@ E-mail: system@sakuranet-co.jp（送信専用）
         const to      = document.getElementById('mailTo2').value.trim();
         const subject = document.getElementById('mailSubject2').value.trim();
         const body    = document.getElementById('mailBody2').value.trim();
+        const fileInput = document.getElementById('mailPdfFile');
         const status  = document.getElementById('mailStatus2');
 
         if (!to)      { status.textContent = '⚠ 宛先メールアドレスを入力してください'; return; }
         if (!subject) { status.textContent = '⚠ 件名を入力してください'; return; }
+        if (!fileInput.files || fileInput.files.length === 0) {
+            status.textContent = '⚠ 添付するPDFファイルを選択してください';
+            return;
+        }
 
-        status.textContent = '📄 PDF生成中...';
+        const file = fileInput.files[0];
+        if (!file.name.toLowerCase().endsWith('.pdf')) {
+            status.textContent = '⚠ PDFファイルを選択してください';
+            return;
+        }
+
+        status.textContent = '📄 PDF読み込み中...';
 
         try {
-            const { base64, filename } = await generatePdfBase64();
+            // ファイルをbase64に変換
+            const base64 = await new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(reader.result.split(',')[1]);
+                reader.onerror = () => reject(new Error('ファイル読み込み失敗'));
+                reader.readAsDataURL(file);
+            });
+
+            const filename = file.name;
 
             status.textContent = '📤 送信中...';
 
@@ -2627,6 +3159,9 @@ E-mail: system@sakuranet-co.jp（送信専用）
         }
     }
 </script>
+
+<!-- 品目オートコンプリートドロップダウン -->
+<div id="itemSuggestDropdown" class="item-suggest-dropdown"></div>
 
 </body>
 </html>
