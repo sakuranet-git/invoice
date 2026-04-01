@@ -78,6 +78,7 @@ function sendMailWithAttachment(
     if (empty($pdfBase64)) {
         // PDF添付なし: プレーンテキストメール
         $headers  = "From: " . mb_encode_mimeheader(FROM_NAME) . " <" . FROM_EMAIL . ">\r\n";
+        $headers .= "Cc: " . FROM_EMAIL . "\r\n";
         $headers .= "Bcc: " . BCC_EMAIL . "\r\n";
         $headers .= "MIME-Version: 1.0\r\n";
         $headers .= "Content-Type: text/plain; charset=UTF-8\r\n";
@@ -87,6 +88,7 @@ function sendMailWithAttachment(
     } else {
         // PDF添付あり: multipart/mixed
         $headers  = "From: " . mb_encode_mimeheader(FROM_NAME) . " <" . FROM_EMAIL . ">\r\n";
+        $headers .= "Cc: " . FROM_EMAIL . "\r\n";
         $headers .= "Bcc: " . BCC_EMAIL . "\r\n";
         $headers .= "MIME-Version: 1.0\r\n";
         $headers .= "Content-Type: multipart/mixed; boundary=\"{$boundary}\"\r\n";

@@ -1297,6 +1297,7 @@
             }
             db = firebase.firestore();
             setSyncBadge(true);
+            // ⚠️ Firestore セキュリティルール対応: 読み取り専用ルール設定済み（2026-03-25修正）
             subscribeInvoices();
             loadCustomerCache();
         } catch (e) {
@@ -1369,6 +1370,7 @@
 
 // ─────────────────────────────────────────
     // 顧客カード並び替え（D&D）
+    // ⚠️ 仕様変更: localStorage に保存（Firestore は避ける）
     // ─────────────────────────────────────────
     const CUSTOMER_ORDER_KEY = 'sakura_customer_order';
 
