@@ -891,7 +891,7 @@
         <div id="syncBadge" style="font-size:12px; padding:4px 12px; border-radius:20px; background:rgba(255,255,255,0.08); color:var(--text-muted);">
             接続中...
         </div>
-        <span style="font-size:13px; color:var(--text-muted);">v1.5.3</span>
+        <span style="font-size:13px; color:var(--text-muted);">v1.5.4</span>
     </div>
 </header>
 
@@ -1313,6 +1313,12 @@
 
     });
 
+    /** 検索用文字列の正規化（小文字化 + NFKC正規化 + 空白完全除去） */
+    function _normalize(str) {
+        if (!str) return "";
+        return String(str).toLowerCase().normalize("NFKC").replace(/\s+/g, "");
+    }
+
     // ─────────────────────────────────────────
     // Firestore: 請求書一覧をリアルタイム購読
     // ─────────────────────────────────────────
@@ -1327,7 +1333,7 @@
                     .filter(inv => !inv.deleted);
                 buildItemSuggestions();
                 const list = currentCustomerFilter
-                    ? invoiceCache.filter(inv => inv.clientName === currentCustomerFilter)
+                    ? invoiceCache.filter(inv => _normalize(inv.clientName) === _normalize(currentCustomerFilter))
                     : invoiceCache;
                 renderInvoiceList(list);
                 // 年セレクトを動的更新
@@ -1403,11 +1409,12 @@
 
         let customers = customerCache;
         if (q) {
+            const nq = _normalize(q);
             customers = customers.filter(c =>
-                (c.name   || '').toLowerCase().includes(q) ||
-                (c.agency || '').toLowerCase().includes(q) ||
-                (c.tel1   || '').includes(q) ||
-                (c.tel2   || '').includes(q)
+                _normalize(c.name).includes(nq) ||
+                _normalize(c.agency).includes(nq) ||
+                (c.tel1 || '').includes(q) ||
+                (c.tel2 || '').includes(q)
             );
         } else {
             customers = applyCustomerOrder(customers);
@@ -1454,7 +1461,7 @@
             const agency   = c.agency || '';
             const tel      = c.tel1 || c.tel2 || '';
             const email    = c.email || '';
-            const invCount = invoiceCache.filter(inv => inv.clientName === name).length;
+            const invCount = invoiceCache.filter(inv => _normalize(inv.clientName) === _normalize(name)).length;
             const isHidden = hidden.has(name);
 
             const prefix = getCompanyPrefix(name);
@@ -1914,9 +1921,12 @@
             ? invoiceCache.filter(inv => inv.clientName === currentCustomerFilter)
             : invoiceCache;
 
-        if (q)     base = base.filter(inv =>
-            (inv.clientName    || '').toLowerCase().includes(q) ||
-            (inv.invoiceNumber || '').toLowerCase().includes(q));
+        if (q) {
+            const nq = _normalize(q);
+            base = base.filter(inv =>
+                _normalize(inv.clientName).includes(nq) ||
+                _normalize(inv.invoiceNumber).includes(nq));
+        }
         if (year)  base = base.filter(inv => (inv.billingMonth || inv.invDate || '').startsWith(year));
         if (month) base = base.filter(inv => (inv.billingMonth || inv.invDate || '').substring(5, 7) === month);
         if (amtMin > 0)         base = base.filter(inv => (inv.total || 0) >= amtMin);
@@ -2076,9 +2086,50 @@
                 buildItemSuggestions();
                 showToast('✅ 保存しました');
             }
+
+            // 顧客マスター（customer_records）との連動更新
+            syncCustomerMaster(data);
+
         } catch (e) {
             console.error('保存エラー:', e);
             showToast('❌ 保存に失敗しました: ' + e.message);
+        }
+    }
+
+    /** 顧客情報をマスターレコードに連動反映（名前が一致するレコードを更新） */
+    async function syncCustomerMaster(invData) {
+        if (!invData.clientName) return;
+        try {
+            const nName = _normalize(invData.clientName);
+            // キャッシュから該当顧客を探す
+            const master = customerCache.find(c => _normalize(c.name) === nName);
+            if (!master) return;
+
+            // 変更があるかチェック
+            const hasChange = 
+                (invData.clientEmail   && invData.clientEmail   !== master.email) ||
+                (invData.clientContact && invData.clientContact !== (master.tel1 || master.tel2)) ||
+                (invData.clientAddress && invData.clientAddress !== master.address);
+
+            if (hasChange) {
+                console.log('マスター連動更新を開始:', invData.clientName);
+                // 名前で検索してドキュメントIDを特定し、更新
+                const snap = await db.collection('customer_records').where('name', '==', master.name).limit(1).get();
+                if (!snap.empty) {
+                    const docId = snap.docs[0].id;
+                    await db.collection('customer_records').doc(docId).update({
+                        email:   invData.clientEmail   || master.email,
+                        tel1:    invData.clientContact || master.tel1,
+                        address: invData.clientAddress || master.address,
+                        updatedFrom: 'InvoiceSystem'
+                    });
+                    console.log('マスター連動更新 完了');
+                    // ローカルキャッシュも更新して次回の newInvoice 等に備える
+                    loadCustomerCache(); 
+                }
+            }
+        } catch (e) {
+            console.error('マスター連動エラー:', e);
         }
     }
 
