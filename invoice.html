@@ -891,7 +891,7 @@
         <div id="syncBadge" style="font-size:12px; padding:4px 12px; border-radius:20px; background:rgba(255,255,255,0.08); color:var(--text-muted);">
             接続中...
         </div>
-        <span style="font-size:13px; color:var(--text-muted);">v1.5.4</span>
+        <span style="font-size:13px; color:var(--text-muted);">v1.5.5</span>
     </div>
 </header>
 
@@ -1578,7 +1578,7 @@
         document.querySelector('.sidebar-header h2').textContent = `🧾 ${name}`;
 
         // 該当顧客の請求書を月別表示
-        const filtered = invoiceCache.filter(inv => inv.clientName === name);
+        const filtered = invoiceCache.filter(inv => _normalize(inv.clientName) === _normalize(name));
         renderInvoiceList(filtered);
 
         // 新規請求書（顧客情報自動入力）
@@ -1692,7 +1692,7 @@
         // 各顧客の最新請求書を取得
         const pages = [];
         for (const { name } of checkedCustomers) {
-            const invs = invoiceCache.filter(inv => inv.clientName === name)
+            const invs = invoiceCache.filter(inv => _normalize(inv.clientName) === _normalize(name))
                 .sort((a, b) => {
                     const toNum = v => { const m = String(v || '').match(/(\d{4})[^\d](\d{1,2})/); return m ? parseInt(m[1]) * 100 + parseInt(m[2]) : 0; };
                     return toNum(b.billingMonth) - toNum(a.billingMonth);
@@ -1963,7 +1963,7 @@
         updateContextBar('new');
 
         const filtered = currentCustomerFilter
-            ? invoiceCache.filter(inv => inv.clientName === currentCustomerFilter)
+            ? invoiceCache.filter(inv => _normalize(inv.clientName) === _normalize(currentCustomerFilter))
             : invoiceCache;
         renderInvoiceList(filtered);
     }
@@ -2053,7 +2053,7 @@
             loadInvoiceMailLog(docId);
             updateContextBar('edit', data.invoiceNumber);
             const listForRender = currentCustomerFilter
-                ? invoiceCache.filter(inv => inv.clientName === currentCustomerFilter)
+                ? invoiceCache.filter(inv => _normalize(inv.clientName) === _normalize(currentCustomerFilter))
                 : invoiceCache;
             renderInvoiceList(listForRender); // アクティブ状態更新
 
