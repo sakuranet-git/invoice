@@ -891,7 +891,7 @@
         <div id="syncBadge" style="font-size:12px; padding:4px 12px; border-radius:20px; background:rgba(255,255,255,0.08); color:var(--text-muted);">
             接続中...
         </div>
-        <span style="font-size:13px; color:var(--text-muted);">v1.5.1</span>
+        <span style="font-size:13px; color:var(--text-muted);">v1.5.3</span>
     </div>
 </header>
 
@@ -1260,7 +1260,7 @@
     /** インボイス制度登録番号（固定） */
     const COMPANY_REG_NUMBER = 'T9120001205370';
     function getInvoiceMode() { return localStorage.getItem('invoiceMode') || 'invoice'; }
-    function getCompanyName()  { return getInvoiceMode() === 'invoice' ? '株式会社さくらねっと' : 'SAKURA-NET'; }
+    function getCompanyName()  { return getInvoiceMode() === 'normal' ? 'SAKURA-NET' : '株式会社さくらねっと'; }
 
     /** @type {firebase.firestore.Firestore} */
     let db;
@@ -2700,7 +2700,7 @@
         document.getElementById('a4Content').innerHTML = buildInvoiceHTML(data);
         const _stampCo = document.getElementById('stampCo');
         _stampCo.src = STAMP_CO_B64;
-        _stampCo.style.display = getInvoiceMode() === 'invoice' ? '' : 'none';
+        _stampCo.style.display = getInvoiceMode() === 'normal' ? 'none' : '';
         document.getElementById('stampPer').src = STAMP_PER_B64;
         const coPos  = JSON.parse(localStorage.getItem('stampCoPos')  || 'null') || { x: 490, y: 140 };
         const perPos = JSON.parse(localStorage.getItem('stampPerPos') || 'null') || { x: 490, y: 195 };
