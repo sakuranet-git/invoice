@@ -1288,6 +1288,17 @@
     // 初期化
     // ─────────────────────────────────────────
     window.addEventListener('DOMContentLoaded', () => {
+        // 顧客並び順：常にサーバーから取得してlocalStorageを上書き（全PC共有 / サーバーが正）
+        fetch('/system/customer_order_api.php?_t=' + Date.now())
+            .then(r => r.json())
+            .then(data => {
+                if (Array.isArray(data.names) && data.names.length > 0) {
+                    localStorage.setItem(CUSTOMER_ORDER_KEY, JSON.stringify(data.names));
+                    renderCustomerGrid(); // 順番を適用して再描画
+                }
+            })
+            .catch(() => {}); // サーバーエラー時はlocalStorageのデータをそのまま使用
+
         // モード切替セレクトを復元
         const modeEl = document.getElementById('invoiceMode');
         if (modeEl) modeEl.value = localStorage.getItem('invoiceMode') || 'invoice';
@@ -1387,6 +1398,12 @@
 
     function saveCustomerOrder(names) {
         localStorage.setItem(CUSTOMER_ORDER_KEY, JSON.stringify(names));
+        // サーバーにも保存して全PCで共有
+        fetch('/system/customer_order_api.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ names: names })
+        }).catch(() => {});
     }
 
     function applyCustomerOrder(customers) {
