@@ -37,9 +37,12 @@ if (json_last_error() !== JSON_ERROR_NONE || !is_array($data)) {
     exit;
 }
 
-$to      = trim($data['to']      ?? '');
+$toRaw   = trim($data['to']      ?? '');
 $subject = trim($data['subject'] ?? '');
 $body    = trim($data['body']    ?? '');
+
+// 宛先：カンマ区切り複数アドレスを解析
+$toAddrs = array_values(array_filter(array_map('trim', explode(',', $toRaw))));
 
 // pdfs 配列（複数添付）
 $pdfs = [];
@@ -54,7 +57,15 @@ if (!empty($data['pdfs']) && is_array($data['pdfs'])) {
 }
 
 $errors = [];
-if (empty($to) || !filter_var($to, FILTER_VALIDATE_EMAIL)) { $errors[] = '宛先メールアドレスが不正です'; }
+if (empty($toAddrs)) {
+    $errors[] = '宛先メールアドレスが入力されていません';
+} else {
+    foreach ($toAddrs as $addr) {
+        if (!filter_var($addr, FILTER_VALIDATE_EMAIL)) {
+            $errors[] = "宛先メールアドレスが不正です: {$addr}";
+        }
+    }
+}
 if (empty($subject)) { $errors[] = '件名が入力されていません'; }
 if (empty($body))    { $errors[] = '本文が入力されていません'; }
 
@@ -65,7 +76,7 @@ if ($errors) {
 }
 
 try {
-    $result = sendMailWithAttachments($to, $subject, $body, $pdfs);
+    $result = sendMailWithAttachments($toAddrs, $subject, $body, $pdfs);
     echo json_encode($result);
 } catch (Throwable $e) {
     error_log('[invoice_send] 予期しないエラー: ' . $e->getMessage());
@@ -74,13 +85,16 @@ try {
 }
 
 function sendMailWithAttachments(
-    string $to,
+    array  $toAddrs,
     string $subject,
     string $body,
     array  $pdfs
 ): array {
     mb_language('Japanese');
     mb_internal_encoding('UTF-8');
+
+    // 複数宛先をカンマ結合
+    $to = implode(', ', $toAddrs);
 
     $boundary = '----=_Part_' . md5(uniqid((string)mt_rand(), true));
 
