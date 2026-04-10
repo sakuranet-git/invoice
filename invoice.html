@@ -891,7 +891,7 @@
         <div id="syncBadge" style="font-size:12px; padding:4px 12px; border-radius:20px; background:rgba(255,255,255,0.08); color:var(--text-muted);">
             接続中...
         </div>
-        <span style="font-size:13px; color:var(--text-muted);">v1.5.7</span>
+        <span style="font-size:13px; color:var(--text-muted);">v1.5.8</span>
     </div>
 </header>
 
@@ -3097,13 +3097,13 @@ E-mail: system@sakuranet-co.jp（送信専用）
 
     function closeMailConfirmModal() {
         document.getElementById('mailConfirmModal').style.display = 'none';
-        // ファイル選択・ドロップゾーンをリセット
+        mailPdfFiles = [];
         const input = document.getElementById('mailPdfFile');
         if (input) input.value = '';
         const nameDiv = document.getElementById('mailPdfFileName');
         if (nameDiv) nameDiv.innerHTML = '';
         const z = document.getElementById('pdfDropZone');
-        if (z) { z.style.background = ''; z.style.borderColor = ''; }
+        if (z) { z.style.background = ''; z.style.borderColor = 'rgba(168,139,250,0.4)'; }
     }
 
     // ─────────────────────────────────────────
@@ -3191,33 +3191,62 @@ E-mail: system@sakuranet-co.jp（送信専用）
         document.getElementById('mailLogModal').style.display = 'none';
     }
 
-    function updateMailPdfList() {
-        const fileInput = document.getElementById('mailPdfFile');
-        const nameDiv   = document.getElementById('mailPdfFileName');
-        const dropZone  = document.getElementById('pdfDropZone');
-        if (!fileInput.files || fileInput.files.length === 0) {
-            nameDiv.textContent = '';
-            dropZone.style.background = '';
+    // PDF添付ファイル累積管理
+    let mailPdfFiles = [];
+
+    function _renderMailPdfList() {
+        const nameDiv  = document.getElementById('mailPdfFileName');
+        const dropZone = document.getElementById('pdfDropZone');
+        if (mailPdfFiles.length === 0) {
+            nameDiv.innerHTML = '';
+            dropZone.style.background  = '';
+            dropZone.style.borderColor = 'rgba(168,139,250,0.4)';
             return;
         }
-        const names = Array.from(fileInput.files).map((f, i) =>
-            `<span style="display:inline-block; background:rgba(168,139,250,0.15); border-radius:4px; padding:2px 8px; margin:2px 0;">📄 ${i + 1}. ${f.name}</span>`
-        );
-        nameDiv.innerHTML = names.join('<br>');
-        dropZone.style.background = 'rgba(168,139,250,0.08)';
+        nameDiv.innerHTML = mailPdfFiles.map((f, i) =>
+            `<span style="display:inline-flex; align-items:center; gap:4px; background:rgba(168,139,250,0.15); border-radius:4px; padding:2px 6px; margin:2px 0;">` +
+            `📄 ${i + 1}. ${f.name}` +
+            `<button onclick="removePdfFile(${i})" style="background:none; border:none; color:#f87171; cursor:pointer; font-size:12px; padding:0 2px; line-height:1;">✕</button>` +
+            `</span>`
+        ).join('<br>');
+        dropZone.style.background  = 'rgba(168,139,250,0.08)';
         dropZone.style.borderColor = 'rgba(168,139,250,0.8)';
+    }
+
+    function removePdfFile(index) {
+        mailPdfFiles.splice(index, 1);
+        _renderMailPdfList();
+    }
+
+    function _addPdfFiles(fileList) {
+        Array.from(fileList).forEach(f => {
+            if (!f.name.toLowerCase().endsWith('.pdf')) return;
+            // 同名ファイルの重複追加を防ぐ
+            if (!mailPdfFiles.find(x => x.name === f.name)) {
+                mailPdfFiles.push(f);
+            }
+        });
+        _renderMailPdfList();
+    }
+
+    function updateMailPdfList() {
+        const fileInput = document.getElementById('mailPdfFile');
+        if (fileInput.files && fileInput.files.length > 0) {
+            _addPdfFiles(fileInput.files);
+            fileInput.value = ''; // 次回選択のためリセット
+        }
     }
 
     function pdfDragOver(e) {
         e.preventDefault();
         const z = document.getElementById('pdfDropZone');
-        z.style.background    = 'rgba(168,139,250,0.15)';
-        z.style.borderColor   = 'rgba(168,139,250,1)';
+        z.style.background  = 'rgba(168,139,250,0.15)';
+        z.style.borderColor = 'rgba(168,139,250,1)';
     }
 
     function pdfDragLeave(e) {
         const z = document.getElementById('pdfDropZone');
-        const hasFiles = document.getElementById('mailPdfFile').files.length > 0;
+        const hasFiles = mailPdfFiles.length > 0;
         z.style.background  = hasFiles ? 'rgba(168,139,250,0.08)' : '';
         z.style.borderColor = hasFiles ? 'rgba(168,139,250,0.8)' : 'rgba(168,139,250,0.4)';
     }
@@ -3226,31 +3255,19 @@ E-mail: system@sakuranet-co.jp（送信専用）
         e.preventDefault();
         const dt = e.dataTransfer;
         if (!dt || !dt.files.length) return;
-        // DataTransfer の files を input に反映
-        const input = document.getElementById('mailPdfFile');
-        input.files = dt.files;
-        updateMailPdfList();
+        _addPdfFiles(dt.files);
     }
 
     async function sendMailWithPdf() {
-        const to        = document.getElementById('mailTo2').value.trim();
-        const subject   = document.getElementById('mailSubject2').value.trim();
-        const body      = document.getElementById('mailBody2').value.trim();
-        const fileInput = document.getElementById('mailPdfFile');
-        const status    = document.getElementById('mailStatus2');
+        const to      = document.getElementById('mailTo2').value.trim();
+        const subject = document.getElementById('mailSubject2').value.trim();
+        const body    = document.getElementById('mailBody2').value.trim();
+        const status  = document.getElementById('mailStatus2');
 
         if (!to)      { status.textContent = '⚠ 宛先メールアドレスを入力してください'; return; }
         if (!subject) { status.textContent = '⚠ 件名を入力してください'; return; }
-        if (!fileInput.files || fileInput.files.length === 0) {
+        if (mailPdfFiles.length === 0) {
             status.textContent = '⚠ 添付するPDFファイルを選択してください';
-            return;
-        }
-
-        // 全ファイルがPDFか確認
-        const files = Array.from(fileInput.files);
-        const nonPdf = files.find(f => !f.name.toLowerCase().endsWith('.pdf'));
-        if (nonPdf) {
-            status.textContent = `⚠ "${nonPdf.name}" はPDFではありません`;
             return;
         }
 
@@ -3258,7 +3275,7 @@ E-mail: system@sakuranet-co.jp（送信専用）
 
         try {
             // 全ファイルをbase64に変換
-            const pdfs = await Promise.all(files.map(file =>
+            const pdfs = await Promise.all(mailPdfFiles.map(file =>
                 new Promise((resolve, reject) => {
                     const reader = new FileReader();
                     reader.onload  = () => resolve({ pdf_base64: reader.result.split(',')[1], pdf_filename: file.name });
