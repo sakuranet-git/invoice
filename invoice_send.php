@@ -37,11 +37,21 @@ if (json_last_error() !== JSON_ERROR_NONE || !is_array($data)) {
     exit;
 }
 
-$to          = trim($data['to']          ?? '');
-$subject     = trim($data['subject']     ?? '');
-$body        = trim($data['body']        ?? '');
-$pdfBase64   = trim($data['pdf_base64']  ?? '');
-$pdfFilename = trim($data['pdf_filename'] ?? '請求書.pdf');
+$to      = trim($data['to']      ?? '');
+$subject = trim($data['subject'] ?? '');
+$body    = trim($data['body']    ?? '');
+
+// pdfs 配列（複数添付）
+$pdfs = [];
+if (!empty($data['pdfs']) && is_array($data['pdfs'])) {
+    foreach ($data['pdfs'] as $p) {
+        $b64  = trim($p['pdf_base64']  ?? '');
+        $name = trim($p['pdf_filename'] ?? '請求書.pdf');
+        if (!empty($b64)) {
+            $pdfs[] = ['base64' => $b64, 'filename' => $name];
+        }
+    }
+}
 
 $errors = [];
 if (empty($to) || !filter_var($to, FILTER_VALIDATE_EMAIL)) { $errors[] = '宛先メールアドレスが不正です'; }
@@ -55,7 +65,7 @@ if ($errors) {
 }
 
 try {
-    $result = sendMailWithAttachment($to, $subject, $body, $pdfBase64, $pdfFilename);
+    $result = sendMailWithAttachments($to, $subject, $body, $pdfs);
     echo json_encode($result);
 } catch (Throwable $e) {
     error_log('[invoice_send] 予期しないエラー: ' . $e->getMessage());
@@ -63,19 +73,18 @@ try {
     echo json_encode(['success' => false, 'error' => 'サーバーエラーが発生しました']);
 }
 
-function sendMailWithAttachment(
+function sendMailWithAttachments(
     string $to,
     string $subject,
     string $body,
-    string $pdfBase64,
-    string $pdfFilename
+    array  $pdfs
 ): array {
     mb_language('Japanese');
     mb_internal_encoding('UTF-8');
 
     $boundary = '----=_Part_' . md5(uniqid((string)mt_rand(), true));
 
-    if (empty($pdfBase64)) {
+    if (empty($pdfs)) {
         // PDF添付なし: プレーンテキストメール
         $headers  = "From: " . mb_encode_mimeheader(FROM_NAME) . " <" . FROM_EMAIL . ">\r\n";
         $headers .= "Cc: " . FROM_EMAIL . "\r\n";
@@ -86,7 +95,7 @@ function sendMailWithAttachment(
 
         $success = mb_send_mail($to, $subject, $body, $headers);
     } else {
-        // PDF添付あり: multipart/mixed
+        // PDF添付あり: multipart/mixed（複数対応）
         $headers  = "From: " . mb_encode_mimeheader(FROM_NAME) . " <" . FROM_EMAIL . ">\r\n";
         $headers .= "Cc: " . FROM_EMAIL . "\r\n";
         $headers .= "Bcc: " . BCC_EMAIL . "\r\n";
@@ -97,20 +106,22 @@ function sendMailWithAttachment(
         $encodedBody = base64_encode($body);
         $bodyChunked = chunk_split($encodedBody, 76, "\r\n");
 
-        // PDFパート
-        $pdfChunked  = chunk_split($pdfBase64, 76, "\r\n");
-        $encodedFilename = mb_encode_mimeheader($pdfFilename, 'UTF-8', 'B');
-
         $messageBody  = "--{$boundary}\r\n";
         $messageBody .= "Content-Type: text/plain; charset=UTF-8\r\n";
         $messageBody .= "Content-Transfer-Encoding: base64\r\n\r\n";
         $messageBody .= $bodyChunked . "\r\n";
 
-        $messageBody .= "--{$boundary}\r\n";
-        $messageBody .= "Content-Type: application/pdf; name=\"{$encodedFilename}\"\r\n";
-        $messageBody .= "Content-Transfer-Encoding: base64\r\n";
-        $messageBody .= "Content-Disposition: attachment; filename=\"{$encodedFilename}\"\r\n\r\n";
-        $messageBody .= $pdfChunked . "\r\n";
+        // PDFパート（複数）
+        foreach ($pdfs as $pdf) {
+            $pdfChunked      = chunk_split($pdf['base64'], 76, "\r\n");
+            $encodedFilename = mb_encode_mimeheader($pdf['filename'], 'UTF-8', 'B');
+
+            $messageBody .= "--{$boundary}\r\n";
+            $messageBody .= "Content-Type: application/pdf; name=\"{$encodedFilename}\"\r\n";
+            $messageBody .= "Content-Transfer-Encoding: base64\r\n";
+            $messageBody .= "Content-Disposition: attachment; filename=\"{$encodedFilename}\"\r\n\r\n";
+            $messageBody .= $pdfChunked . "\r\n";
+        }
 
         $messageBody .= "--{$boundary}--\r\n";
 
@@ -118,7 +129,7 @@ function sendMailWithAttachment(
     }
 
     if ($success) {
-        error_log('[invoice_send] 送信成功: to=' . $to . ' pdf=' . ($pdfBase64 ? 'yes' : 'no'));
+        error_log('[invoice_send] 送信成功: to=' . $to . ' pdfs=' . count($pdfs));
         return ['success' => true];
     }
 

@@ -1,5 +1,16 @@
 # RELEASE NOTES — SAKURA 請求書システム
 
+## v1.5.6 — 2026-04-10
+
+### 機能追加：メール送信で複数PDF添付に対応
+
+- **`invoice.html`**: 添付ファイル選択欄に `multiple` 属性を追加。複数PDFを一度に選択可能に。
+- **`invoice.html`**: 選択したファイル名を番号付きで一覧表示する `updateMailPdfList()` を追加。
+- **`invoice_send.php`**: `pdfs: [{pdf_base64, pdf_filename}, ...]` の配列形式に対応し、複数ファイルをMIMEマルチパートで添付して送信。
+- PDF無し送信（`sendMail()`）の動作は変更なし。
+
+---
+
 ## v1.5.5 — 2026-04-06
 
 ### バグ修正：顧客選択時に請求書一覧が即座に表示されない問題を解消

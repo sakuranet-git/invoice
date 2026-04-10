@@ -891,7 +891,7 @@
         <div id="syncBadge" style="font-size:12px; padding:4px 12px; border-radius:20px; background:rgba(255,255,255,0.08); color:var(--text-muted);">
             接続中...
         </div>
-        <span style="font-size:13px; color:var(--text-muted);">v1.5.5</span>
+        <span style="font-size:13px; color:var(--text-muted);">v1.5.6</span>
     </div>
 </header>
 
@@ -1232,9 +1232,9 @@
             <textarea id="mailBody2" style="width:100%; box-sizing:border-box; min-height:140px;"></textarea>
         </div>
         <div style="margin-bottom:12px;">
-            <label style="font-size:11px; color:var(--text-muted); display:block; margin-bottom:4px;">📎 添付PDF（印刷/PDF保存で保存したファイル）</label>
-            <input type="file" id="mailPdfFile" accept=".pdf" style="width:100%; box-sizing:border-box; font-size:13px;">
-            <div id="mailPdfFileName" style="font-size:11px; color:var(--accent); margin-top:4px;"></div>
+            <label style="font-size:11px; color:var(--text-muted); display:block; margin-bottom:4px;">📎 添付PDF（複数選択可）</label>
+            <input type="file" id="mailPdfFile" accept=".pdf" multiple style="width:100%; box-sizing:border-box; font-size:13px;" onchange="updateMailPdfList()">
+            <div id="mailPdfFileName" style="font-size:11px; color:var(--accent); margin-top:6px; line-height:1.6;"></div>
         </div>
         <div id="mailStatus2" style="font-size:13px; color:var(--warning); min-height:20px; margin-bottom:8px;"></div>
         <div style="display:flex; justify-content:flex-end; gap:8px;">
@@ -3174,12 +3174,23 @@ E-mail: system@sakuranet-co.jp（送信専用）
         document.getElementById('mailLogModal').style.display = 'none';
     }
 
-    async function sendMailWithPdf() {
-        const to      = document.getElementById('mailTo2').value.trim();
-        const subject = document.getElementById('mailSubject2').value.trim();
-        const body    = document.getElementById('mailBody2').value.trim();
+    function updateMailPdfList() {
         const fileInput = document.getElementById('mailPdfFile');
-        const status  = document.getElementById('mailStatus2');
+        const nameDiv   = document.getElementById('mailPdfFileName');
+        if (!fileInput.files || fileInput.files.length === 0) {
+            nameDiv.textContent = '';
+            return;
+        }
+        const names = Array.from(fileInput.files).map((f, i) => `📄 ${i + 1}. ${f.name}`);
+        nameDiv.innerHTML = names.join('<br>');
+    }
+
+    async function sendMailWithPdf() {
+        const to        = document.getElementById('mailTo2').value.trim();
+        const subject   = document.getElementById('mailSubject2').value.trim();
+        const body      = document.getElementById('mailBody2').value.trim();
+        const fileInput = document.getElementById('mailPdfFile');
+        const status    = document.getElementById('mailStatus2');
 
         if (!to)      { status.textContent = '⚠ 宛先メールアドレスを入力してください'; return; }
         if (!subject) { status.textContent = '⚠ 件名を入力してください'; return; }
@@ -3188,37 +3199,40 @@ E-mail: system@sakuranet-co.jp（送信専用）
             return;
         }
 
-        const file = fileInput.files[0];
-        if (!file.name.toLowerCase().endsWith('.pdf')) {
-            status.textContent = '⚠ PDFファイルを選択してください';
+        // 全ファイルがPDFか確認
+        const files = Array.from(fileInput.files);
+        const nonPdf = files.find(f => !f.name.toLowerCase().endsWith('.pdf'));
+        if (nonPdf) {
+            status.textContent = `⚠ "${nonPdf.name}" はPDFではありません`;
             return;
         }
 
         status.textContent = '📄 PDF読み込み中...';
 
         try {
-            // ファイルをbase64に変換
-            const base64 = await new Promise((resolve, reject) => {
-                const reader = new FileReader();
-                reader.onload = () => resolve(reader.result.split(',')[1]);
-                reader.onerror = () => reject(new Error('ファイル読み込み失敗'));
-                reader.readAsDataURL(file);
-            });
-
-            const filename = file.name;
+            // 全ファイルをbase64に変換
+            const pdfs = await Promise.all(files.map(file =>
+                new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onload  = () => resolve({ pdf_base64: reader.result.split(',')[1], pdf_filename: file.name });
+                    reader.onerror = () => reject(new Error(`"${file.name}" の読み込み失敗`));
+                    reader.readAsDataURL(file);
+                })
+            ));
 
             status.textContent = '📤 送信中...';
 
             const res = await fetch('invoice_send.php', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ to, subject, body, pdf_base64: base64, pdf_filename: filename }),
+                body: JSON.stringify({ to, subject, body, pdfs }),
             });
             const json = await res.json();
 
             if (json.success) {
                 await saveMailLog(to, subject, true);
-                showToast('✅ メールを送信しました（PDF添付）');
+                const count = pdfs.length;
+                showToast(`✅ メールを送信しました（PDF添付 ${count}件）`);
                 closeMailConfirmModal();
                 closePreviewModal();
             } else {
