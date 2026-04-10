@@ -891,7 +891,7 @@
         <div id="syncBadge" style="font-size:12px; padding:4px 12px; border-radius:20px; background:rgba(255,255,255,0.08); color:var(--text-muted);">
             接続中...
         </div>
-        <span style="font-size:13px; color:var(--text-muted);">v1.5.6</span>
+        <span style="font-size:13px; color:var(--text-muted);">v1.5.7</span>
     </div>
 </header>
 
@@ -1232,9 +1232,19 @@
             <textarea id="mailBody2" style="width:100%; box-sizing:border-box; min-height:140px;"></textarea>
         </div>
         <div style="margin-bottom:12px;">
-            <label style="font-size:11px; color:var(--text-muted); display:block; margin-bottom:4px;">📎 添付PDF（複数選択可）</label>
-            <input type="file" id="mailPdfFile" accept=".pdf" multiple style="width:100%; box-sizing:border-box; font-size:13px;" onchange="updateMailPdfList()">
-            <div id="mailPdfFileName" style="font-size:11px; color:var(--accent); margin-top:6px; line-height:1.6;"></div>
+            <label style="font-size:11px; color:var(--text-muted); display:block; margin-bottom:4px;">📎 添付PDF</label>
+            <div id="pdfDropZone"
+                style="border:2px dashed rgba(168,139,250,0.4); border-radius:8px; padding:18px 12px; text-align:center; cursor:pointer; transition:background 0.2s, border-color 0.2s;"
+                onclick="document.getElementById('mailPdfFile').click()"
+                ondragover="pdfDragOver(event)"
+                ondragleave="pdfDragLeave(event)"
+                ondrop="pdfDrop(event)">
+                <div style="font-size:22px; margin-bottom:4px;">📄</div>
+                <div style="font-size:12px; color:var(--text-muted);">PDFをここにドロップ <span style="color:rgba(168,139,250,0.7);">または クリックして選択</span></div>
+                <div style="font-size:10px; color:var(--text-muted); margin-top:2px;">複数ファイル対応</div>
+            </div>
+            <input type="file" id="mailPdfFile" accept=".pdf" multiple style="display:none;" onchange="updateMailPdfList()">
+            <div id="mailPdfFileName" style="font-size:11px; color:var(--accent); margin-top:6px; line-height:1.8;"></div>
         </div>
         <div id="mailStatus2" style="font-size:13px; color:var(--warning); min-height:20px; margin-bottom:8px;"></div>
         <div style="display:flex; justify-content:flex-end; gap:8px;">
@@ -3087,6 +3097,13 @@ E-mail: system@sakuranet-co.jp（送信専用）
 
     function closeMailConfirmModal() {
         document.getElementById('mailConfirmModal').style.display = 'none';
+        // ファイル選択・ドロップゾーンをリセット
+        const input = document.getElementById('mailPdfFile');
+        if (input) input.value = '';
+        const nameDiv = document.getElementById('mailPdfFileName');
+        if (nameDiv) nameDiv.innerHTML = '';
+        const z = document.getElementById('pdfDropZone');
+        if (z) { z.style.background = ''; z.style.borderColor = ''; }
     }
 
     // ─────────────────────────────────────────
@@ -3177,12 +3194,42 @@ E-mail: system@sakuranet-co.jp（送信専用）
     function updateMailPdfList() {
         const fileInput = document.getElementById('mailPdfFile');
         const nameDiv   = document.getElementById('mailPdfFileName');
+        const dropZone  = document.getElementById('pdfDropZone');
         if (!fileInput.files || fileInput.files.length === 0) {
             nameDiv.textContent = '';
+            dropZone.style.background = '';
             return;
         }
-        const names = Array.from(fileInput.files).map((f, i) => `📄 ${i + 1}. ${f.name}`);
+        const names = Array.from(fileInput.files).map((f, i) =>
+            `<span style="display:inline-block; background:rgba(168,139,250,0.15); border-radius:4px; padding:2px 8px; margin:2px 0;">📄 ${i + 1}. ${f.name}</span>`
+        );
         nameDiv.innerHTML = names.join('<br>');
+        dropZone.style.background = 'rgba(168,139,250,0.08)';
+        dropZone.style.borderColor = 'rgba(168,139,250,0.8)';
+    }
+
+    function pdfDragOver(e) {
+        e.preventDefault();
+        const z = document.getElementById('pdfDropZone');
+        z.style.background    = 'rgba(168,139,250,0.15)';
+        z.style.borderColor   = 'rgba(168,139,250,1)';
+    }
+
+    function pdfDragLeave(e) {
+        const z = document.getElementById('pdfDropZone');
+        const hasFiles = document.getElementById('mailPdfFile').files.length > 0;
+        z.style.background  = hasFiles ? 'rgba(168,139,250,0.08)' : '';
+        z.style.borderColor = hasFiles ? 'rgba(168,139,250,0.8)' : 'rgba(168,139,250,0.4)';
+    }
+
+    function pdfDrop(e) {
+        e.preventDefault();
+        const dt = e.dataTransfer;
+        if (!dt || !dt.files.length) return;
+        // DataTransfer の files を input に反映
+        const input = document.getElementById('mailPdfFile');
+        input.files = dt.files;
+        updateMailPdfList();
     }
 
     async function sendMailWithPdf() {
