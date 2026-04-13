@@ -3070,37 +3070,111 @@
         const data = collectFormData();
         const bm = getBillingMonthLabel();  // "2026年3月分"
         const clientName = data.clientName || 'お客様';
-
-        document.getElementById('mailTo2').value      = data.clientEmail || '';
+        const mode = getInvoiceMode();
         const _cn = getCompanyName();
-        document.getElementById('mailSubject2').value = `【${_cn}】${bm}請求書のご案内（${data.invoiceNumber}）`;
-        document.getElementById('mailBody2').value    =
+
+        document.getElementById('mailTo2').value = data.clientEmail || '';
+
+        let subject, body;
+        if (mode === 'estimate') {
+            subject = `【${_cn}】${bm}見積書のご案内（${data.invoiceNumber}）`;
+            body =
+`${clientName} 御中
+
+いつも大変お世話になっております。
+${_cn}でございます。
+
+${bm}の見積書をPDFにてお送りいたします。
+お手数ではございますが、ご確認のほどよろしくお願い申し上げます。
+
+――――――――――――――――――
+【見積書番号】${data.invoiceNumber}
+【発行日】${data.invDate}
+【見積対象】${bm}
+【お見積金額（税込）】¥${formatNum(data.total)}
+――――――――――――――――――
+
+料金変更やメンテナンス情報、障害情報、各種お知らせ・約款につきましては、
+下記ホームページにてご案内しております。
+https://sakuranet-co.jp/
+
+ご不明な点等がございましたら、お気軽にお問い合わせください。
+
+─────────────────────────────
+${_cn}
+TEL：06-7777-2720 / FAX：06-6303-3767
+E-mail：system@sakuranet-co.jp（送信専用）
+─────────────────────────────`;
+        } else if (mode === 'delivery') {
+            subject = `【${_cn}】${bm}納品書のご案内（${data.invoiceNumber}）`;
+            body =
+`${clientName} 御中
+
+いつも大変お世話になっております。
+${_cn}でございます。
+
+${bm}の納品書をPDFにてお送りいたします。
+お手数ではございますが、ご確認のほどよろしくお願い申し上げます。
+
+――――――――――――――――――
+【納品書番号】${data.invoiceNumber}
+【発行日】${data.invDate}
+【納品対象】${bm}
+――――――――――――――――――
+
+料金変更やメンテナンス情報、障害情報、各種お知らせ・約款につきましては、
+下記ホームページにてご案内しております。
+https://sakuranet-co.jp/
+
+ご不明な点等がございましたら、お気軽にお問い合わせください。
+
+─────────────────────────────
+${_cn}
+TEL：06-7777-2720 / FAX：06-6303-3767
+E-mail：system@sakuranet-co.jp（送信専用）
+─────────────────────────────`;
+        } else {
+            // 請求書モード（デフォルト）
+            subject = `【${_cn}】${bm}請求書のご案内（${data.invoiceNumber}）`;
+            body =
 `${clientName} 御中
 
 いつも大変お世話になっております。
 ${_cn}でございます。
 
 ${bm}の請求書をPDFにてお送りいたします。
-ご確認のほどよろしくお願いいたします。
+お手数ではございますが、ご確認のほどよろしくお願い申し上げます。
 
+――――――――――――――――――
 【請求書番号】${data.invoiceNumber}
 【発行日】${data.invDate}
 【請求対象】${bm}
 【ご請求金額（税込）】¥${formatNum(data.total)}
+――――――――――――――――――
 
-ご不明な点がございましたら、お気軽にお問い合わせください。
+なお、お支払い方法ごとの決済日は下記の通りでございます。
+・クレジットカード：毎月15日
+・口座振替　　　：毎月22日
+※土日祝日の場合は翌営業日に決済となります。
 
-クレジットカードは毎月15日
-口座振替は毎月22日
-（土日祝は翌営業日の決済になります）
-クレジットカード決済はStripe社からも明細が届きますが、弊社の請求書を必ず採用してください。
+また、クレジットカード決済につきましては、Stripe社からの明細も配信されますが、
+正式な請求書は本メールに添付の弊社発行のものをご確認くださいますようお願い申し上げます。
+
+料金変更やメンテナンス情報、障害情報、各種お知らせ・約款につきましては、
+下記ホームページにてご案内しております。
+https://sakuranet-co.jp/
+
+ご不明な点等がございましたら、お気軽にお問い合わせください。
 
 ─────────────────────────────
 ${_cn}
-TEL: 06-7777-2720 / FAX: 06-6303-3767
-E-mail: system@sakuranet-co.jp（送信専用）
+TEL：06-7777-2720 / FAX：06-6303-3767
+E-mail：system@sakuranet-co.jp（送信専用）
 ─────────────────────────────`;
+        }
 
+        document.getElementById('mailSubject2').value = subject;
+        document.getElementById('mailBody2').value = body;
         document.getElementById('mailStatus2').textContent = '';
         document.getElementById('mailConfirmModal').style.display = 'flex';
     }
